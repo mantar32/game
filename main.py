@@ -42,6 +42,7 @@ clock = pygame.time.Clock()
 font_large = pygame.font.SysFont("impact", 72)
 font_med = pygame.font.SysFont("impact", 48)
 font_small = pygame.font.SysFont("arial", 24, bold=True)
+font_touch = pygame.font.SysFont("arial", 18, bold=True)
 
 # --- Sanal Dokunmatik Kontroller (Touch UI) ---
 class TouchButton:
@@ -131,6 +132,93 @@ class TouchController:
             lbl = font_small.render(b.text, True, b.text_color)
             surface.blit(lbl, (b.rect.centerx - lbl.get_width()//2, b.rect.centery - lbl.get_height()//2))
 
+
+
+class MobileTouchController:
+    PAD = 22
+    BTN = 86
+    ABTN = 88
+    SAFE_BOTTOM = 44
+
+    def __init__(self):
+        p = self.PAD
+        b = self.BTN
+        a = self.ABTN
+        by = HEIGHT - self.SAFE_BOTTOM - b
+        lx = p
+
+        self.buttons = [
+            TouchButton((lx, by, b, b), pygame.K_a, "<\nSOL", (45, 56, 68)),
+            TouchButton((lx + b + p, by, b, b), pygame.K_d, ">\nSAG", (45, 56, 68)),
+            TouchButton((lx + (b + p)//2, by - b - p, b, b), pygame.K_w, "^\nZIPLA", (47, 94, 79)),
+            TouchButton((WIDTH - p - a*2 - p, by, a, a), pygame.K_j, "VUR", (205, 55, 55)),
+            TouchButton((WIDTH - p - a, by, a, a), pygame.K_k, "TEKME", (55, 155, 75)),
+            TouchButton((WIDTH - p - a*2 - p, by - a - p, a, a), pygame.K_l, "OZEL", (68, 83, 190)),
+            TouchButton((WIDTH - p - a, by - a - p, a, a), pygame.K_u, "KORUN", (158, 105, 38)),
+        ]
+        self.active_touches = {}
+        self.virtual_keys = {button.key: False for button in self.buttons}
+
+    def _hit_test(self, x, y):
+        for button in self.buttons:
+            if button.rect.collidepoint(x, y):
+                return button
+        return None
+
+    def _set_touch(self, touch_id, button):
+        old_button = self.active_touches.get(touch_id)
+        if old_button is button:
+            return
+        if old_button:
+            old_button.is_pressed = False
+            self.virtual_keys[old_button.key] = False
+        if button:
+            button.is_pressed = True
+            self.virtual_keys[button.key] = True
+            self.active_touches[touch_id] = button
+        else:
+            self.active_touches.pop(touch_id, None)
+
+    def clear(self):
+        for button in self.buttons:
+            button.is_pressed = False
+            self.virtual_keys[button.key] = False
+        self.active_touches.clear()
+
+    def process_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self._set_touch("mouse", self._hit_test(*event.pos))
+        elif event.type == pygame.MOUSEMOTION and event.buttons[0]:
+            self._set_touch("mouse", self._hit_test(*event.pos))
+        elif event.type == pygame.MOUSEBUTTONUP:
+            self._set_touch("mouse", None)
+        elif event.type == pygame.FINGERDOWN:
+            x, y = event.x * WIDTH, event.y * HEIGHT
+            self._set_touch(event.finger_id, self._hit_test(x, y))
+        elif event.type == pygame.FINGERMOTION:
+            x, y = event.x * WIDTH, event.y * HEIGHT
+            self._set_touch(event.finger_id, self._hit_test(x, y))
+        elif event.type == pygame.FINGERUP:
+            self._set_touch(event.finger_id, None)
+
+    def draw(self, surface):
+        for button in self.buttons:
+            panel = pygame.Surface((button.rect.width, button.rect.height), pygame.SRCALPHA)
+            alpha = 245 if button.is_pressed else 215
+            color = button.base_color
+            if button.is_pressed:
+                color = tuple(min(255, channel + 70) for channel in button.base_color)
+            pygame.draw.rect(panel, (*color, alpha), panel.get_rect(), border_radius=14)
+            border = (255, 255, 0) if button.is_pressed else (235, 235, 235)
+            pygame.draw.rect(panel, (*border, 255), panel.get_rect(), 4, border_radius=14)
+            surface.blit(panel, button.rect.topleft)
+
+            lines = button.text.split("\n")
+            line_height = font_touch.get_height()
+            top = button.rect.centery - (line_height * len(lines)) // 2
+            for index, line in enumerate(lines):
+                label = font_touch.render(line, True, button.text_color)
+                surface.blit(label, (button.rect.centerx - label.get_width()//2, top + index * line_height))
 
 
 class CombinedKeys:
@@ -390,12 +478,13 @@ class GameManager:
         self.state = "MENU"
         self.camera = Camera(); self.particles = ParticleSystem()
         self.timer = ROUND_TIME; self.last_tick = 0
-        self.touch_ui = TouchController()
+        self.touch_ui = MobileTouchController()
         
         self.ctrl_p1 = {'up': pygame.K_w, 'left': pygame.K_a, 'right': pygame.K_d, 'punch': pygame.K_j, 'kick': pygame.K_k, 'special': pygame.K_l, 'block': pygame.K_u}
         self.ctrl_p2 = {'up': pygame.K_UP, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'punch': pygame.K_KP1, 'kick': pygame.K_KP2, 'special': pygame.K_KP3, 'block': pygame.K_KP0}
 
     def start_fight(self, vs_ai):
+        self.touch_ui.clear()
         self.ai_mode = vs_ai; self.ai = AIController(self.ctrl_p2) if vs_ai else None
         self.p1 = Fighter("P1", "Fighter Ninja", P1_COLOR, 300, 1, self.ctrl_p1)
         self.p2 = Fighter("P2", "Shinobi AI" if vs_ai else "Shinobi", P2_COLOR, 700, -1, self.ctrl_p2)
@@ -541,6 +630,7 @@ class GameManager:
             self.touch_ui.draw(surface)
 
     def __restart(self):
+        self.touch_ui.clear()
         self.state = "MENU"
 
 
