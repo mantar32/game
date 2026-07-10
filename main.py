@@ -139,7 +139,7 @@ class MobileTouchController:
     PAD = 22
     BTN = 86
     ABTN = 88
-    SAFE_BOTTOM = 44
+    SAFE_BOTTOM = 74
 
     def __init__(self):
         p = self.PAD

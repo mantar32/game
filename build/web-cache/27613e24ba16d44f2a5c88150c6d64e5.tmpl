@@ -138,7 +138,7 @@ config = {
     cdn : "{{cookiecutter.cdn}}",
     autorun : {{cookiecutter.autorun}},
     PYBUILD : "{{cookiecutter.PYBUILD}}",
-    fb_ar   :  1.77,
+    fb_ar   :  1.7067,
     fb_width : "{{cookiecutter.width}}",
     fb_height : "{{cookiecutter.height}}"
 }
@@ -163,8 +163,7 @@ function show_infobox() {
     <title>{{cookiecutter.title}}</title>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="height=device-height, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes"/>
 
@@ -204,25 +203,48 @@ function show_infobox() {
         canvas.emscripten {
             border: 0px none;
             background-color: transparent;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            width: min(100vw, calc(100dvh * 1.7067));
+            height: min(100dvh, calc(100vw / 1.7067));
             z-index: 5;
 
             padding: 0;
-            margin: 0 auto;
+            margin: 0;
 
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            right: auto;
+            bottom: auto;
+            transform: translate(-50%, -50%);
+            touch-action: none;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            overscroll-behavior: none;
+            background-color: #0d1b2a;
         }
 
         body {
             font-family: arial;
             margin: 0;
-            padding: none;
-            background-color:powderblue;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: fixed;
+            inset: 0;
+            touch-action: none;
+            overscroll-behavior: none;
+            background-color:#0d1b2a;
         }
 
         .topright{
