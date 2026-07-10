@@ -40,66 +40,93 @@ font_small = pygame.font.SysFont("arial", 24, bold=True)
 
 # --- Sanal Dokunmatik Kontroller (Touch UI) ---
 class TouchButton:
-    def __init__(self, rect, key, text, color=(100, 100, 100, 120)):
+    def __init__(self, rect, key, text, color, text_color=(255,255,255)):
         self.rect = pygame.Rect(rect)
         self.key = key
         self.text = text
-        self.color = color
+        self.base_color = color
+        self.text_color = text_color
         self.is_pressed = False
 
 class TouchController:
+    PAD = 18       # kenar boşluğu
+    BTN = 80       # D-pad buton boyutu
+    ABTN = 90      # aksiyon buton boyutu
+
     def __init__(self):
+        P = self.PAD; B = self.BTN; A = self.ABTN
+        BY = HEIGHT - P - B          # en alttaki buton Y
+        LX = P                       # sol başlangıç X
+
+        # --- SOL D-PAD ---
         self.buttons = [
-            # Sol Taraf (Yön)
-            TouchButton((20, HEIGHT - 120, 80, 80), pygame.K_a, "<"),
-            TouchButton((120, HEIGHT - 120, 80, 80), pygame.K_d, ">"),
-            TouchButton((70, HEIGHT - 210, 80, 80), pygame.K_w, "ZILA"),
-            TouchButton((70, HEIGHT - 40, 80, 40), pygame.K_u, "BLOK"),
-            
-            # Sağ Taraf (Aksiyon)
-            TouchButton((WIDTH - 200, HEIGHT - 100, 80, 80), pygame.K_j, "YUMRUK", (200, 50, 50, 120)),
-            TouchButton((WIDTH - 100, HEIGHT - 160, 80, 80), pygame.K_k, "TEKME", (50, 200, 50, 120)),
-            TouchButton((WIDTH - 100, HEIGHT - 60, 80, 60), pygame.K_l, "ÖZEL", (50, 50, 200, 120)),
+            # Sol
+            TouchButton((LX,              BY, B, B), pygame.K_a, "◀", (60, 60, 60)),
+            # Sağ
+            TouchButton((LX + B + P,      BY, B, B), pygame.K_d, "▶", (60, 60, 60)),
+            # Zıpla (ortada üstte)
+            TouchButton((LX + (B+P)//2,   BY - B - P, B, B), pygame.K_w, "▲", (60, 80, 60)),
+
+            # --- SAĞ AKSİYON BUTONLARI ---
+            # Yumruk - sol
+            TouchButton((WIDTH - P - A*2 - P,  BY,      A, A), pygame.K_j, "YUM", (200, 60, 60)),
+            # Tekme - sağ
+            TouchButton((WIDTH - P - A,         BY,      A, A), pygame.K_k, "TEK", (60, 180, 60)),
+            # Özel - üst orta
+            TouchButton((WIDTH - P - A - A//2 - P//2, BY - A - P, A, A), pygame.K_l, "ÖZEL", (60, 60, 200)),
+            # Blok - üst sağ
+            TouchButton((WIDTH - P - A,          BY - A - P, A, A), pygame.K_u, "BLOK", (120, 80, 20)),
         ]
         self.active_touches = {}
-        self.virtual_keys = {k.key: False for k in self.buttons}
+        self.virtual_keys = {b.key: False for b in self.buttons}
+
+    def _hit_test(self, x, y):
+        for b in self.buttons:
+            if b.rect.collidepoint(x, y):
+                return b
+        return None
 
     def process_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            for b in self.buttons:
-                if b.rect.collidepoint(event.pos):
-                    b.is_pressed = True
-                    self.virtual_keys[b.key] = True
-                    self.active_touches['mouse'] = b
+            b = self._hit_test(*event.pos)
+            if b:
+                b.is_pressed = True
+                self.virtual_keys[b.key] = True
+                self.active_touches['mouse'] = b
         elif event.type == pygame.MOUSEBUTTONUP:
-            if 'mouse' in self.active_touches:
-                b = self.active_touches['mouse']
+            b = self.active_touches.pop('mouse', None)
+            if b:
                 b.is_pressed = False
                 self.virtual_keys[b.key] = False
-                del self.active_touches['mouse']
-        
         elif event.type == pygame.FINGERDOWN:
             x, y = event.x * WIDTH, event.y * HEIGHT
-            for b in self.buttons:
-                if b.rect.collidepoint(x, y):
-                    b.is_pressed = True
-                    self.virtual_keys[b.key] = True
-                    self.active_touches[event.finger_id] = b
+            b = self._hit_test(x, y)
+            if b:
+                b.is_pressed = True
+                self.virtual_keys[b.key] = True
+                self.active_touches[event.finger_id] = b
         elif event.type == pygame.FINGERUP:
-            if event.finger_id in self.active_touches:
-                b = self.active_touches[event.finger_id]
+            b = self.active_touches.pop(event.finger_id, None)
+            if b:
                 b.is_pressed = False
                 self.virtual_keys[b.key] = False
-                del self.active_touches[event.finger_id]
 
     def draw(self, surface):
         for b in self.buttons:
+            # Yarı saydam arka yüzey
             s = pygame.Surface((b.rect.width, b.rect.height), pygame.SRCALPHA)
-            color = (255, 255, 255, 200) if b.is_pressed else b.color
-            pygame.draw.rect(s, color, (0, 0, b.rect.width, b.rect.height), border_radius=40)
+            alpha = 230 if b.is_pressed else 160
+            col = (min(255, b.base_color[0]+80), min(255, b.base_color[1]+80), min(255, b.base_color[2]+80)) if b.is_pressed else b.base_color
+            pygame.draw.rect(s, (*col, alpha), (0, 0, b.rect.width, b.rect.height), border_radius=20)
+            # Kenarlık
+            border_col = (255, 255, 0) if b.is_pressed else (180, 180, 180)
+            pygame.draw.rect(s, (*border_col, 255), (0, 0, b.rect.width, b.rect.height), 3, border_radius=20)
             surface.blit(s, b.rect.topleft)
-            txt = font_small.render(b.text, True, (255,255,255) if not b.is_pressed else (0,0,0))
-            surface.blit(txt, (b.rect.centerx - txt.get_width()//2, b.rect.centery - txt.get_height()//2))
+            # Yazı
+            lbl = font_small.render(b.text, True, b.text_color)
+            surface.blit(lbl, (b.rect.centerx - lbl.get_width()//2, b.rect.centery - lbl.get_height()//2))
+
+
 
 class CombinedKeys:
     def __init__(self, real_keys, virtual_keys):
