@@ -15,7 +15,8 @@ JUMP_FORCE = -14
 PUNCH_DAMAGE = 8
 KICK_DAMAGE = 12
 SPECIAL_DAMAGE = 20
-BLOCK_REDUCTION = 0.5
+BLOCK_REDUCTION = 0.0
+SPECIAL_RECHARGE_RATE = 0.08
 MAX_HEALTH = 100
 ROUND_TIME = 99
 ROUNDS_TO_WIN = 2
@@ -201,15 +202,16 @@ class MobileTouchController:
         elif event.type == pygame.FINGERUP:
             self._set_touch(event.finger_id, None)
 
-    def draw(self, surface):
+    def draw(self, surface, special_ready=True):
         for button in self.buttons:
+            is_special_locked = button.key == pygame.K_l and not special_ready
             panel = pygame.Surface((button.rect.width, button.rect.height), pygame.SRCALPHA)
-            alpha = 245 if button.is_pressed else 215
-            color = button.base_color
-            if button.is_pressed:
+            alpha = 150 if is_special_locked else (245 if button.is_pressed else 215)
+            color = (70, 70, 82) if is_special_locked else button.base_color
+            if button.is_pressed and not is_special_locked:
                 color = tuple(min(255, channel + 70) for channel in button.base_color)
             pygame.draw.rect(panel, (*color, alpha), panel.get_rect(), border_radius=14)
-            border = (255, 255, 0) if button.is_pressed else (235, 235, 235)
+            border = (110, 110, 125) if is_special_locked else ((255, 255, 0) if button.is_pressed else (235, 235, 235))
             pygame.draw.rect(panel, (*border, 255), panel.get_rect(), 4, border_radius=14)
             surface.blit(panel, button.rect.topleft)
 
@@ -492,6 +494,7 @@ class GameManager:
 
     def reset_round(self):
         self.p1.health = self.p2.health = MAX_HEALTH
+        self.p1.special_meter = self.p2.special_meter = 100
         self.p1.pos, self.p2.pos = [300, GROUND_Y], [700, GROUND_Y]
         self.p1.change_state(IdleState()); self.p2.change_state(IdleState())
         self.p1.is_ko = self.p2.is_ko = False
@@ -531,6 +534,8 @@ class GameManager:
 
         self.p1.update(combined_keys)
         self.check_collisions(); self.camera.update()
+        self.p1.special_meter = min(100, self.p1.special_meter + SPECIAL_RECHARGE_RATE)
+        self.p2.special_meter = min(100, self.p2.special_meter + SPECIAL_RECHARGE_RATE)
         
         if pygame.time.get_ticks() - self.last_tick >= 1000 and self.state == "FIGHT":
             self.timer -= 1; self.last_tick = pygame.time.get_ticks()
@@ -627,7 +632,7 @@ class GameManager:
             return
 
         if self.state == "FIGHT":
-            self.touch_ui.draw(surface)
+            self.touch_ui.draw(surface, self.p1.special_meter >= 100)
 
     def __restart(self):
         self.touch_ui.clear()
