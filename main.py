@@ -355,13 +355,15 @@ class AIController:
 # --- GameManager ---
 class GameManager:
     def __init__(self):
-        self.state = "MENU"
+        self.state = "INTRO"
+        self.intro_start = pygame.time.get_ticks()
         self.camera = Camera(); self.particles = ParticleSystem()
         self.timer = ROUND_TIME; self.last_tick = 0
         self.touch_ui = TouchController()
         
         self.ctrl_p1 = {'up': pygame.K_w, 'left': pygame.K_a, 'right': pygame.K_d, 'punch': pygame.K_j, 'kick': pygame.K_k, 'special': pygame.K_l, 'block': pygame.K_u}
         self.ctrl_p2 = {'up': pygame.K_UP, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'punch': pygame.K_KP1, 'kick': pygame.K_KP2, 'special': pygame.K_KP3, 'block': pygame.K_KP0}
+        self.start_fight(True)
 
     def start_fight(self, vs_ai):
         self.ai_mode = vs_ai; self.ai = AIController(self.ctrl_p2) if vs_ai else None
@@ -378,7 +380,7 @@ class GameManager:
         self.particles.particles.clear()
 
     def update(self):
-        if self.state == "MENU": return
+        if self.state == "INTRO": return
         
         real_keys = pygame.key.get_pressed()
         combined_keys = CombinedKeys(real_keys, self.touch_ui.virtual_keys)
@@ -434,17 +436,18 @@ class GameManager:
             pygame.draw.line(surface, color, (0, i), (WIDTH, i))
         pygame.draw.rect(surface, GROUND_COLOR, (0, GROUND_Y + self.camera.offset[1], WIDTH, HEIGHT))
 
-        if self.state == "MENU":
+        if self.state == "INTRO":
+            elapsed = (pygame.time.get_ticks() - self.intro_start) // 1000
+            countdown = 3 - elapsed
+            if countdown <= 0:
+                self.state = "FIGHT"
+                return
             title = font_large.render("STREET FIGHTER PY", True, HIGHLIGHT)
-            surface.blit(title, (WIDTH//2 - title.get_width()//2, 100))
-            
-            pygame.draw.rect(surface, (50, 150, 50), (WIDTH//2 - 200, HEIGHT//2 - 40, 400, 80), border_radius=20)
-            t1 = font_med.render("1 OYUNCU (VS YAPAY ZEKA)", True, TEXT_COLOR)
-            surface.blit(t1, (WIDTH//2 - t1.get_width()//2, HEIGHT//2 - 25))
-            
-            pygame.draw.rect(surface, (150, 50, 50), (WIDTH//2 - 200, HEIGHT//2 + 60, 400, 80), border_radius=20)
-            t2 = font_med.render("2 OYUNCU (AYNI EKRAN)", True, TEXT_COLOR)
-            surface.blit(t2, (WIDTH//2 - t2.get_width()//2, HEIGHT//2 + 75))
+            surface.blit(title, (WIDTH//2 - title.get_width()//2, 150))
+            c = font_large.render(str(countdown), True, (255, 100, 100))
+            surface.blit(c, (WIDTH//2 - c.get_width()//2, HEIGHT//2))
+            sub = font_small.render("Hazır ol!", True, TEXT_COLOR)
+            surface.blit(sub, (WIDTH//2 - sub.get_width()//2, HEIGHT//2 + 90))
             return
 
         self.p1.draw(surface, self.camera.offset); self.p2.draw(surface, self.camera.offset)
@@ -475,11 +478,16 @@ class GameManager:
             txt = font_large.render(f"{winner} KAZANDI!", True, HIGHLIGHT)
             surface.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2 - 100))
             
-            pygame.draw.rect(surface, (50, 50, 150), (WIDTH//2 - 150, HEIGHT//2 + 20, 300, 80), border_radius=20)
+            pygame.draw.rect(surface, (50, 50, 150), (WIDTH//2 - 200, HEIGHT//2 + 20, 400, 80), border_radius=20)
             sub = font_med.render("YENİDEN OYNA", True, TEXT_COLOR)
             surface.blit(sub, (WIDTH//2 - sub.get_width()//2, HEIGHT//2 + 35))
             
-            if pygame.key.get_pressed()[pygame.K_r]: self.state = "MENU"
+            if pygame.key.get_pressed()[pygame.K_r]: self.__restart()
+
+    def __restart(self):
+        self.intro_start = pygame.time.get_ticks()
+        self.state = "INTRO"
+        self.start_fight(True)
 
         # Mobil / Dokunmatik kontrolleri çiz
         self.touch_ui.draw(surface)
@@ -493,23 +501,17 @@ async def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and game.state == "MENU":
-                if event.key == pygame.K_1: game.start_fight(True)
-                elif event.key == pygame.K_2: game.start_fight(False)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r and game.state == "GAME_OVER":
+                    game._GameManager__restart()
             elif event.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = event.pos
+                    mx, my = event.pos
                 else:
-                    x, y = event.x * WIDTH, event.y * HEIGHT
-                
-                if game.state == "MENU":
-                    if HEIGHT//2 - 40 <= y <= HEIGHT//2 + 40 and WIDTH//2 - 200 <= x <= WIDTH//2 + 200:
-                        game.start_fight(True)
-                    elif HEIGHT//2 + 60 <= y <= HEIGHT//2 + 140 and WIDTH//2 - 200 <= x <= WIDTH//2 + 200:
-                        game.start_fight(False)
-                elif game.state == "GAME_OVER":
-                    if HEIGHT//2 + 20 <= y <= HEIGHT//2 + 100 and WIDTH//2 - 150 <= x <= WIDTH//2 + 150:
-                        game.state = "MENU"
+                    mx, my = event.x * WIDTH, event.y * HEIGHT
+                if game.state == "GAME_OVER":
+                    if HEIGHT//2 + 20 <= my <= HEIGHT//2 + 100:
+                        game._GameManager__restart()
             
             # Dokunmatik (Touch) girdilerini işleme
             if game.state == "FIGHT":
