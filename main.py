@@ -29,10 +29,15 @@ P2_COLOR = (255, 60, 100)
 TEXT_COLOR = (240, 240, 240)
 HIGHLIGHT = (255, 215, 0)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
+
 pygame.init()
-pygame.mixer.init()
+try:
+    pygame.mixer.init()
+except pygame.error:
+    pass
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Dövüş Oyunu - Mobil Sürüm")
+pygame.display.set_caption("Dovus Oyunu - Mobil Surum")
 clock = pygame.time.Clock()
 font_large = pygame.font.SysFont("impact", 72)
 font_med = pygame.font.SysFont("impact", 48)
@@ -61,11 +66,11 @@ class TouchController:
         # --- SOL D-PAD ---
         self.buttons = [
             # Sol
-            TouchButton((LX,              BY, B, B), pygame.K_a, "◀", (60, 60, 60)),
+            TouchButton((LX,              BY, B, B), pygame.K_a, "<", (60, 60, 60)),
             # Sağ
-            TouchButton((LX + B + P,      BY, B, B), pygame.K_d, "▶", (60, 60, 60)),
+            TouchButton((LX + B + P,      BY, B, B), pygame.K_d, ">", (60, 60, 60)),
             # Zıpla (ortada üstte)
-            TouchButton((LX + (B+P)//2,   BY - B - P, B, B), pygame.K_w, "▲", (60, 80, 60)),
+            TouchButton((LX + (B+P)//2,   BY - B - P, B, B), pygame.K_w, "^", (60, 80, 60)),
 
             # --- SAĞ AKSİYON BUTONLARI ---
             # Yumruk - sol
@@ -73,7 +78,7 @@ class TouchController:
             # Tekme - sağ
             TouchButton((WIDTH - P - A,         BY,      A, A), pygame.K_k, "TEK", (60, 180, 60)),
             # Özel - üst orta
-            TouchButton((WIDTH - P - A - A//2 - P//2, BY - A - P, A, A), pygame.K_l, "ÖZEL", (60, 60, 200)),
+            TouchButton((WIDTH - P - A - A//2 - P//2, BY - A - P, A, A), pygame.K_l, "OZEL", (60, 60, 200)),
             # Blok - üst sağ
             TouchButton((WIDTH - P - A,          BY - A - P, A, A), pygame.K_u, "BLOK", (120, 80, 20)),
         ]
@@ -173,7 +178,7 @@ class SpriteManager:
             for anim_name, file_name in anim_map.items():
                 self.sprites[p_id][anim_name] = self.load_anim(folder, file_name)
 
-assets_path = r"assets"
+assets_path = os.path.join(BASE_DIR, "assets")
 assets = SpriteManager(assets_path)
 
 
@@ -405,7 +410,14 @@ class GameManager:
         self.particles.particles.clear()
 
     def update(self):
-        if self.state == "MENU": return
+        if self.state in ("MENU", "GAME_OVER"):
+            return
+        if self.state == "ROUND_END":
+            if pygame.time.get_ticks() - self.timer_end > 3000:
+                self.reset_round()
+                self.state = "FIGHT"
+            self.camera.update()
+            return
         
         real_keys = pygame.key.get_pressed()
         combined_keys = CombinedKeys(real_keys, self.touch_ui.virtual_keys)
@@ -451,7 +463,12 @@ class GameManager:
 
     def handle_round_end(self, timeout, winner=None):
         self.state = "ROUND_END"; self.timer_end = pygame.time.get_ticks()
-        if not timeout and winner:
+        if timeout:
+            if self.p1.health > self.p2.health:
+                winner = self.p1
+            elif self.p2.health > self.p1.health:
+                winner = self.p2
+        if winner:
             winner.rounds_won += 1
             if winner.rounds_won >= ROUNDS_TO_WIN: self.state = "GAME_OVER"
 
@@ -502,7 +519,6 @@ class GameManager:
         if self.state == "ROUND_END":
             txt = font_large.render("K.O." if self.p1.is_ko or self.p2.is_ko else "TIME UP", True, (255,50,50))
             surface.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2))
-            if pygame.time.get_ticks() - self.timer_end > 3000: self.reset_round(); self.state = "FIGHT"
         elif self.state == "GAME_OVER":
             winner = self.p1.name if self.p1.rounds_won >= ROUNDS_TO_WIN else self.p2.name
             txt = font_large.render(f"{winner} KAZANDI!", True, HIGHLIGHT)
@@ -519,12 +535,13 @@ class GameManager:
             surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 120))
 
             if pygame.key.get_pressed()[pygame.K_r]: self.__restart()
+            return
+
+        if self.state == "FIGHT":
+            self.touch_ui.draw(surface)
 
     def __restart(self):
         self.state = "MENU"
-
-        # Mobil / Dokunmatik kontrolleri çiz
-        self.touch_ui.draw(surface)
 
 
 # --- Asenkron Ana Döngü (Pygbag Uyumlu) ---
