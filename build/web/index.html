@@ -1,12 +1,12 @@
-<html lang="en-us"><script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js" type=module id="site" data-python="python3.12" data-LINES=42 data-COLUMNS=132 data-os="vtx,snd,gui" async defer>#<!--
+<html lang="en-us"><script src="./cdn/0.9.3/pythons.js" type=module id="site" data-python="python3.12" data-LINES=42 data-COLUMNS=132 data-os="snd,gui" async defer>#<!--
 
 print("""
 Loading dovus_web from dovus_web.apk
     Pygbag Version : 0.9.3
     Template Version : 0.9.3
     Python  : 3.12
-    CDN URL : https://pygame-web.github.io/cdn/0.9.3/
-    Screen  : 1280x720
+    CDN URL : ./cdn/0.9.3/
+    Screen  : 1024x600
     Title   : dovus_web
     Folder  : dovus_web
     Authors : pgw
@@ -126,7 +126,7 @@ asyncio.run( custom_site() )
 // this dict is available under PyConfig.config from __main__
 
 config = {
-    xtermjs : "1" ,
+    xtermjs : "0" ,
     _sdl2 : "canvas",
     user_canvas : 0,
     user_canvas_managed : 0,
@@ -134,8 +134,8 @@ config = {
     ume_block : 0,
     can_close : 0,
     archive : "dovus_web",
-    gui_debug : 2,
-    cdn : "https://pygame-web.github.io/cdn/0.9.3/",
+    gui_debug : 0,
+    cdn : "./cdn/0.9.3/",
     autorun : 0,
     PYBUILD : "3.12",
     fb_ar   :  1.7067,
@@ -158,12 +158,37 @@ function show_infobox() {
     infobox.style.top = top + "px";
 }
 
+function fit_game_canvas() {
+    const width = Math.max(1, Math.floor(window.visualViewport?.width || window.innerWidth || 1024));
+    const height = Math.max(1, Math.floor(window.visualViewport?.height || window.innerHeight || 600));
+    for (const id of ["canvas", "canvas3d"]) {
+        const canvas = document.getElementById(id);
+        if (!canvas) continue;
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = "100dvw";
+        canvas.style.height = "100dvh";
+    }
+    if (globalThis.python?.config) {
+        globalThis.python.config.fb_width = String(width);
+        globalThis.python.config.fb_height = String(height);
+        globalThis.python.config.fb_ar = width / height;
+    }
+    if (typeof window_resize === "function") {
+        window_resize();
+    }
+}
+
+window.addEventListener("resize", fit_game_canvas);
+window.visualViewport?.addEventListener("resize", fit_game_canvas);
+window.addEventListener("orientationchange", () => setTimeout(fit_game_canvas, 250));
+
 </script>
 
     <title>dovus_web</title>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes"/>
 
@@ -183,6 +208,12 @@ function show_infobox() {
         #progress {
             height: 20px;
             width: 300px;
+        }
+
+        #transfer,
+        #pyconsole,
+        #crt {
+            display: none !important;
         }
 
         #infobox {
@@ -205,19 +236,16 @@ function show_infobox() {
             background-color: transparent;
             width: 100vw;
             height: 100vh;
-            width: min(100vw, calc(100dvh * 1.7067));
-            height: min(100dvh, calc(100vw / 1.7067));
+            width: 100dvw;
+            height: 100dvh;
             z-index: 5;
 
             padding: 0;
             margin: 0;
 
             position: fixed;
-            top: 50%;
-            left: 50%;
-            right: auto;
-            bottom: auto;
-            transform: translate(-50%, -50%);
+            inset: 0;
+            display: block;
             touch-action: none;
         }
 
@@ -279,24 +307,13 @@ function show_infobox() {
         }
     </style>
 
-    <script>
-/*
-        if (navigator.serviceWorker)
-            navigator.serviceWorker.register("https://pygame-web.github.io/cdn/0.9.3/pygbag0.9.3.js")
-        else
-            console.warn("Service workers not supported")
-*/
-    </script>
-
-    <script src="https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js"></script>
-
 </head>
 
 <body>
 
     <div id="transfer" align=center>
 <!--        <div class="spinner" id='spinner'></div> -->
-        <div class="emscripten" id="status">Downloading...</div>
+        <div class="emscripten" id="status">Loading...</div>
         <div class="emscripten">
             <progress value="0" max="100" id="progress"></progress>
         </div>
@@ -305,14 +322,14 @@ function show_infobox() {
 
 
     <canvas class="emscripten" id="canvas"
-width="1px"
-height="1px"
+width="1024px"
+height="600px"
     oncontextmenu="event.preventDefault()" tabindex=1>
     </canvas>
 
     <canvas class="emscripten" id="canvas3d"
-width="1280px"
-height="720px"
+width="1024px"
+height="600px"
     oncontextmenu="event.preventDefault()" tabindex=1 hidden>
     </canvas>
 
@@ -358,7 +375,7 @@ frameborder="1"
                 mozallowfullscreen="true"
                 sandbox="allow-same-origin allow-top-navigation allow-scripts allow-pointer-lock"
                 allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated"
-                src="https://pygame-web.github.io/cdn/0.9.3/empty.html"
+                src="about:blank"
                 scrolling="yes">
             </iframe>
         </div>
@@ -392,6 +409,7 @@ frameborder="1"
         info.hidden = debug_hidden
         box.hidden =  debug_hidden
 
+        fit_game_canvas()
         show_infobox()
     }
 

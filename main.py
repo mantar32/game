@@ -51,19 +51,14 @@ def game_viewport(window_size=None):
     if window_size is None:
         window_size = screen.get_size()
     win_w, win_h = window_size
-    scale = min(win_w / WIDTH, win_h / HEIGHT)
-    draw_w = max(1, int(WIDTH * scale))
-    draw_h = max(1, int(HEIGHT * scale))
-    return pygame.Rect((win_w - draw_w) // 2, (win_h - draw_h) // 2, draw_w, draw_h)
+    return pygame.Rect(0, 0, max(1, win_w), max(1, win_h))
 
 
 def screen_to_game(pos):
     viewport = game_viewport()
-    if not viewport.collidepoint(pos):
-        return None
     x = (pos[0] - viewport.x) * WIDTH / viewport.width
     y = (pos[1] - viewport.y) * HEIGHT / viewport.height
-    return int(x), int(y)
+    return max(0, min(WIDTH - 1, int(x))), max(0, min(HEIGHT - 1, int(y)))
 
 
 def finger_to_game(event):
