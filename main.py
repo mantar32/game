@@ -4,6 +4,10 @@ import math
 import sys
 import os
 import asyncio
+try:
+    import platform as web_platform
+except Exception:
+    web_platform = None
 
 # --- Constants & Settings ---
 WIDTH, HEIGHT = 1024, 600
@@ -45,6 +49,47 @@ font_large = pygame.font.SysFont("impact", 72)
 font_med = pygame.font.SysFont("impact", 48)
 font_small = pygame.font.SysFont("arial", 24, bold=True)
 font_touch = pygame.font.SysFont("arial", 18, bold=True)
+
+WEB_KEY_NAMES = {
+    pygame.K_a: "a",
+    pygame.K_d: "d",
+    pygame.K_w: "w",
+    pygame.K_j: "j",
+    pygame.K_k: "k",
+    pygame.K_l: "l",
+    pygame.K_u: "u",
+}
+
+
+def web_key_pressed(key):
+    key_name = WEB_KEY_NAMES.get(key)
+    if not key_name or web_platform is None:
+        return False
+    try:
+        keys = getattr(web_platform.window, "__dovus_keys", None)
+        if keys is None:
+            return False
+        try:
+            return bool(keys[key_name])
+        except Exception:
+            return bool(getattr(keys, key_name, False))
+    except Exception:
+        return False
+
+
+def web_start_requested():
+    if web_platform is None:
+        return False
+    try:
+        if bool(getattr(web_platform.window, "__dovus_start", False)):
+            try:
+                setattr(web_platform.window, "__dovus_start", False)
+            except Exception:
+                pass
+            return True
+    except Exception:
+        return False
+    return False
 
 
 def game_viewport(window_size=None):
@@ -256,7 +301,7 @@ class CombinedKeys:
         self.real_keys = real_keys
         self.virtual_keys = virtual_keys
     def __getitem__(self, key):
-        return self.real_keys[key] or self.virtual_keys.get(key, False)
+        return self.real_keys[key] or self.virtual_keys.get(key, False) or web_key_pressed(key)
 
 
 # --- Sprite Loader ---
@@ -661,9 +706,6 @@ class GameManager:
             if pygame.key.get_pressed()[pygame.K_r]: self.__restart()
             return
 
-        if self.state == "FIGHT":
-            self.touch_ui.draw(surface, self.p1.special_meter >= 100)
-
     def __restart(self):
         self.touch_ui.clear()
         self.state = "MENU"
@@ -693,6 +735,12 @@ async def main():
             # Dokunmatik (Touch) girdilerini işleme (sadece oyun icerisinde)
             if game.state == "FIGHT":
                 game.touch_ui.process_event(event)
+
+        if web_start_requested():
+            if game.state == "MENU":
+                game.start_fight(True)
+            elif game.state == "GAME_OVER":
+                game._GameManager__restart()
 
         game.update()
         game.draw(game_surface)

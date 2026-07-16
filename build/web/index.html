@@ -183,6 +183,121 @@ window.addEventListener("resize", fit_game_canvas);
 window.visualViewport?.addEventListener("resize", fit_game_canvas);
 window.addEventListener("orientationchange", () => setTimeout(fit_game_canvas, 250));
 
+const touchKeyMap = {
+    a: { key: "a", code: "KeyA", keyCode: 65 },
+    d: { key: "d", code: "KeyD", keyCode: 68 },
+    w: { key: "w", code: "KeyW", keyCode: 87 },
+    j: { key: "j", code: "KeyJ", keyCode: 74 },
+    k: { key: "k", code: "KeyK", keyCode: 75 },
+    l: { key: "l", code: "KeyL", keyCode: 76 },
+    u: { key: "u", code: "KeyU", keyCode: 85 },
+    enter: { key: "Enter", code: "Enter", keyCode: 13 },
+};
+
+const activeTouchKeys = new Set();
+globalThis.__dovus_keys = globalThis.__dovus_keys || Object.create(null);
+globalThis.__dovus_start = false;
+
+function emitKeyboard(type, keyName) {
+    const spec = touchKeyMap[keyName];
+    if (!spec) return;
+    const event = new KeyboardEvent(type, {
+        key: spec.key,
+        code: spec.code,
+        bubbles: true,
+        cancelable: true,
+        repeat: false,
+    });
+    Object.defineProperty(event, "keyCode", { get: () => spec.keyCode });
+    Object.defineProperty(event, "which", { get: () => spec.keyCode });
+    const canvas = document.getElementById("canvas");
+    canvas?.focus();
+    canvas?.dispatchEvent(event);
+    document.dispatchEvent(event);
+    window.dispatchEvent(event);
+}
+
+function tapStartKey() {
+    globalThis.__dovus_start = true;
+    emitKeyboard("keydown", "enter");
+    emitKeyboard("keyup", "enter");
+}
+
+function pressTouchKey(button) {
+    const keyName = button.dataset.key;
+    if (!keyName || activeTouchKeys.has(keyName)) return;
+    tapStartKey();
+    activeTouchKeys.add(keyName);
+    globalThis.__dovus_keys[keyName] = true;
+    button.classList.add("is-down");
+    emitKeyboard("keydown", keyName);
+}
+
+function releaseTouchKey(button) {
+    const keyName = button.dataset.key;
+    if (!keyName || !activeTouchKeys.has(keyName)) return;
+    activeTouchKeys.delete(keyName);
+    globalThis.__dovus_keys[keyName] = false;
+    button.classList.remove("is-down");
+    emitKeyboard("keyup", keyName);
+}
+
+function releaseAllTouchKeys() {
+    document.querySelectorAll(".touch-button.is-down").forEach(releaseTouchKey);
+    for (const keyName of Array.from(activeTouchKeys)) {
+        activeTouchKeys.delete(keyName);
+        globalThis.__dovus_keys[keyName] = false;
+        emitKeyboard("keyup", keyName);
+    }
+}
+
+function setupTouchKeyboard() {
+    document.querySelectorAll(".touch-button").forEach((button) => {
+        button.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            button.setPointerCapture?.(event.pointerId);
+            pressTouchKey(button);
+        });
+        button.addEventListener("pointerup", (event) => {
+            event.preventDefault();
+            releaseTouchKey(button);
+        });
+        button.addEventListener("pointercancel", (event) => {
+            event.preventDefault();
+            releaseTouchKey(button);
+        });
+        button.addEventListener("lostpointercapture", () => releaseTouchKey(button));
+        button.addEventListener("touchstart", (event) => {
+            event.preventDefault();
+            pressTouchKey(button);
+        }, { passive: false });
+        button.addEventListener("touchend", (event) => {
+            event.preventDefault();
+            releaseTouchKey(button);
+        }, { passive: false });
+        button.addEventListener("touchcancel", (event) => {
+            event.preventDefault();
+            releaseTouchKey(button);
+        }, { passive: false });
+        button.addEventListener("mousedown", (event) => {
+            event.preventDefault();
+            pressTouchKey(button);
+        });
+        button.addEventListener("mouseup", (event) => {
+            event.preventDefault();
+            releaseTouchKey(button);
+        });
+        button.addEventListener("mouseleave", () => releaseTouchKey(button));
+        button.addEventListener("contextmenu", (event) => event.preventDefault());
+    });
+}
+
+window.addEventListener("blur", releaseAllTouchKeys);
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) releaseAllTouchKeys();
+});
+window.addEventListener("DOMContentLoaded", setupTouchKeyboard);
+
 </script>
 
     <title>dovus_web</title>
@@ -247,6 +362,72 @@ window.addEventListener("orientationchange", () => setTimeout(fit_game_canvas, 2
             inset: 0;
             display: block;
             touch-action: none;
+        }
+
+        #touch-controls {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            pointer-events: none;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .touch-cluster {
+            position: absolute;
+            bottom: max(18px, env(safe-area-inset-bottom));
+            display: grid;
+            gap: 14px;
+            pointer-events: auto;
+        }
+
+        .touch-cluster.left {
+            left: max(18px, env(safe-area-inset-left));
+            grid-template-columns: 78px 78px;
+            grid-template-rows: 78px 78px;
+        }
+
+        .touch-cluster.right {
+            right: max(18px, env(safe-area-inset-right));
+            grid-template-columns: 82px 82px;
+            grid-template-rows: 82px 82px;
+        }
+
+        .touch-button {
+            border: 3px solid rgba(255, 255, 255, 0.82);
+            border-radius: 14px;
+            color: #fff;
+            font: 700 15px/1.1 Arial, sans-serif;
+            background: rgba(45, 56, 68, 0.74);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-width: 0;
+            min-height: 0;
+            padding: 0;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .touch-button[data-key="w"] {
+            grid-column: 1 / 3;
+            width: 78px;
+            justify-self: center;
+            background: rgba(47, 94, 79, 0.78);
+        }
+
+        .touch-button[data-key="j"] { background: rgba(205, 55, 55, 0.8); }
+        .touch-button[data-key="k"] { background: rgba(55, 155, 75, 0.8); }
+        .touch-button[data-key="l"] { background: rgba(68, 83, 190, 0.8); }
+        .touch-button[data-key="u"] { background: rgba(158, 105, 38, 0.82); }
+
+        .touch-button.is-down {
+            border-color: #ffd700;
+            filter: brightness(1.25);
         }
 
         html {
@@ -332,6 +513,20 @@ width="1024px"
 height="600px"
     oncontextmenu="event.preventDefault()" tabindex=1 hidden>
     </canvas>
+
+    <div id="touch-controls" aria-hidden="true">
+        <div class="touch-cluster left">
+            <button class="touch-button" data-key="w" type="button">^<br>ZIPLA</button>
+            <button class="touch-button" data-key="a" type="button">&lt;<br>SOL</button>
+            <button class="touch-button" data-key="d" type="button">&gt;<br>SAG</button>
+        </div>
+        <div class="touch-cluster right">
+            <button class="touch-button" data-key="l" type="button">OZEL</button>
+            <button class="touch-button" data-key="u" type="button">KORUN</button>
+            <button class="touch-button" data-key="j" type="button">VUR</button>
+            <button class="touch-button" data-key="k" type="button">TEKME</button>
+        </div>
+    </div>
 
     <div id="infobox">Loading, please wait ...</div>
 
