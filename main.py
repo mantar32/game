@@ -16,6 +16,7 @@ GROUND_Y = 480
 GRAVITY = 0.8
 WALK_SPEED = 5
 JUMP_FORCE = -14
+SPRITE_SCALE = 1.62
 PUNCH_DAMAGE = 8
 KICK_DAMAGE = 12
 SPECIAL_DAMAGE = 20
@@ -507,7 +508,7 @@ class SpriteManager:
         frames = []
         for i in range(max(1, num_frames)):
             frame = sheet.subsurface(pygame.Rect(i * frame_w, 0, frame_w, frame_h))
-            frame = pygame.transform.scale(frame, (frame_w * 2, frame_h * 2))
+            frame = pygame.transform.scale(frame, (int(frame_w * SPRITE_SCALE), int(frame_h * SPRITE_SCALE)))
             frames.append(frame)
         return frames
 
@@ -725,11 +726,11 @@ class Fighter:
 
     def draw(self, surface, cam):
         cx, cy = int(self.pos[0] + cam[0]), int(self.pos[1] + cam[1])
-        pygame.draw.ellipse(surface, (20,20,20), (cx-30, GROUND_Y+cam[1]-10, 60, 20))
+        pygame.draw.ellipse(surface, (20,20,20), (cx-26, GROUND_Y+cam[1]-9, 52, 18))
         if len(self.frames) > 0:
             img = self.frames[int(self.frame_index)]
             if self.facing == -1: img = pygame.transform.flip(img, True, False)
-            img_rect = img.get_rect(midbottom=(cx, cy + 18))
+            img_rect = img.get_rect(midbottom=(cx, cy + 12))
             surface.blit(img, img_rect)
 
 # --- AI Controller ---
@@ -799,7 +800,7 @@ class GameManager:
         self.touch_ui.clear()
         self.p1.health = self.p2.health = MAX_HEALTH
         self.p1.special_meter = self.p2.special_meter = 100
-        self.p1.pos, self.p2.pos = [300, GROUND_Y], [700, GROUND_Y]
+        self.p1.pos, self.p2.pos = [250, GROUND_Y], [774, GROUND_Y]
         self.p1.change_state(IdleState()); self.p2.change_state(IdleState())
         self.p1.is_ko = self.p2.is_ko = False
         self.timer = ROUND_TIME; self.last_tick = pygame.time.get_ticks()
