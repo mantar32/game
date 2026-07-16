@@ -195,8 +195,15 @@ const touchKeyMap = {
 };
 
 const activeTouchKeys = new Set();
+globalThis.dovus_keys = globalThis.dovus_keys || Object.create(null);
+globalThis.dovus_start = false;
+globalThis.dovus_restart = false;
 globalThis.__dovus_keys = globalThis.__dovus_keys || Object.create(null);
 globalThis.__dovus_start = false;
+globalThis.__dovus_restart = false;
+globalThis.dovus_state = "MENU";
+globalThis.dovus_player_dead = false;
+globalThis.dovus_game_over = false;
 
 function emitKeyboard(type, keyName) {
     const spec = touchKeyMap[keyName];
@@ -218,6 +225,7 @@ function emitKeyboard(type, keyName) {
 }
 
 function tapStartKey() {
+    globalThis.dovus_start = true;
     globalThis.__dovus_start = true;
     emitKeyboard("keydown", "enter");
     emitKeyboard("keyup", "enter");
@@ -228,6 +236,7 @@ function pressTouchKey(button) {
     if (!keyName || activeTouchKeys.has(keyName)) return;
     tapStartKey();
     activeTouchKeys.add(keyName);
+    globalThis.dovus_keys[keyName] = true;
     globalThis.__dovus_keys[keyName] = true;
     button.classList.add("is-down");
     emitKeyboard("keydown", keyName);
@@ -237,6 +246,7 @@ function releaseTouchKey(button) {
     const keyName = button.dataset.key;
     if (!keyName || !activeTouchKeys.has(keyName)) return;
     activeTouchKeys.delete(keyName);
+    globalThis.dovus_keys[keyName] = false;
     globalThis.__dovus_keys[keyName] = false;
     button.classList.remove("is-down");
     emitKeyboard("keyup", keyName);
@@ -246,9 +256,24 @@ function releaseAllTouchKeys() {
     document.querySelectorAll(".touch-button.is-down").forEach(releaseTouchKey);
     for (const keyName of Array.from(activeTouchKeys)) {
         activeTouchKeys.delete(keyName);
+        globalThis.dovus_keys[keyName] = false;
         globalThis.__dovus_keys[keyName] = false;
         emitKeyboard("keyup", keyName);
     }
+}
+
+function restartFight() {
+    globalThis.dovus_restart = true;
+    globalThis.__dovus_restart = true;
+    releaseAllTouchKeys();
+    tapStartKey();
+}
+
+function updateRestartButton() {
+    const button = document.getElementById("restart-button");
+    if (!button) return;
+    const shouldShow = Boolean(globalThis.dovus_game_over || globalThis.dovus_player_dead || globalThis.dovus_state === "GAME_OVER");
+    button.hidden = !shouldShow;
 }
 
 function setupTouchKeyboard() {
@@ -290,6 +315,19 @@ function setupTouchKeyboard() {
         button.addEventListener("mouseleave", () => releaseTouchKey(button));
         button.addEventListener("contextmenu", (event) => event.preventDefault());
     });
+    const restartButton = document.getElementById("restart-button");
+    restartButton?.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        restartFight();
+    });
+    restartButton?.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        restartFight();
+    }, { passive: false });
+    restartButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        restartFight();
+    });
 }
 
 window.addEventListener("blur", releaseAllTouchKeys);
@@ -297,6 +335,7 @@ document.addEventListener("visibilitychange", () => {
     if (document.hidden) releaseAllTouchKeys();
 });
 window.addEventListener("DOMContentLoaded", setupTouchKeyboard);
+setInterval(updateRestartButton, 120);
 
 </script>
 
@@ -430,6 +469,27 @@ window.addEventListener("DOMContentLoaded", setupTouchKeyboard);
             filter: brightness(1.25);
         }
 
+        #restart-button {
+            position: fixed;
+            left: 50%;
+            top: 62%;
+            transform: translate(-50%, -50%);
+            z-index: 70;
+            min-width: 240px;
+            min-height: 72px;
+            border: 3px solid #ffd700;
+            border-radius: 14px;
+            background: rgba(30, 80, 190, 0.9);
+            color: #fff;
+            font: 800 22px/1 Arial, sans-serif;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+            touch-action: none;
+        }
+
+        #restart-button:active {
+            filter: brightness(1.2);
+        }
+
         html {
             width: 100%;
             height: 100%;
@@ -527,6 +587,8 @@ height="600px"
             <button class="touch-button" data-key="k" type="button">TEKME</button>
         </div>
     </div>
+
+    <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
 
     <div id="infobox">Loading, please wait ...</div>
 

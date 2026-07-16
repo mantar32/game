@@ -25,6 +25,23 @@ MAX_HEALTH = 100
 ROUND_TIME = 99
 ROUNDS_TO_WIN = 2
 
+CHARACTER_STATS = {
+    "Fighter": {
+        "display": "Fighter Ninja",
+        "punch": PUNCH_DAMAGE,
+        "kick": 15,
+        "special": 18,
+        "speed": 1.0,
+    },
+    "Shinobi": {
+        "display": "Shinobi",
+        "punch": 7,
+        "kick": 12,
+        "special": SPECIAL_DAMAGE,
+        "speed": 1.08,
+    },
+}
+
 # Colors
 BG_TOP = (13, 27, 42)
 BG_BOT = (65, 90, 119)
@@ -66,7 +83,7 @@ def web_key_pressed(key):
     if not key_name or web_platform is None:
         return False
     try:
-        keys = getattr(web_platform.window, "__dovus_keys", None)
+        keys = getattr(web_platform.window, "dovus_keys", None) or getattr(web_platform.window, "__dovus_keys", None)
         if keys is None:
             return False
         try:
@@ -81,15 +98,44 @@ def web_start_requested():
     if web_platform is None:
         return False
     try:
-        if bool(getattr(web_platform.window, "__dovus_start", False)):
-            try:
-                setattr(web_platform.window, "__dovus_start", False)
-            except Exception:
-                pass
+        if bool(getattr(web_platform.window, "dovus_start", False)) or bool(getattr(web_platform.window, "__dovus_start", False)):
+            for name in ("dovus_start", "__dovus_start"):
+                try:
+                    setattr(web_platform.window, name, False)
+                except Exception:
+                    pass
             return True
     except Exception:
         return False
     return False
+
+
+def web_restart_requested():
+    if web_platform is None:
+        return False
+    try:
+        if bool(getattr(web_platform.window, "dovus_restart", False)) or bool(getattr(web_platform.window, "__dovus_restart", False)):
+            for name in ("dovus_restart", "__dovus_restart"):
+                try:
+                    setattr(web_platform.window, name, False)
+                except Exception:
+                    pass
+            return True
+    except Exception:
+        return False
+    return False
+
+
+def publish_web_state(game):
+    if web_platform is None:
+        return
+    try:
+        player_dead = bool(hasattr(game, "p1") and game.p1.health <= 0)
+        setattr(web_platform.window, "dovus_state", game.state)
+        setattr(web_platform.window, "dovus_player_dead", player_dead)
+        setattr(web_platform.window, "dovus_game_over", game.state == "GAME_OVER")
+    except Exception:
+        pass
 
 
 def game_viewport(window_size=None):
@@ -401,8 +447,8 @@ class WalkState(State):
     def enter(self, fighter): fighter.set_anim("Walk")
     def update(self, fighter, keys):
         if fighter.is_ko: fighter.change_state(IdleState()); return
-        if keys[fighter.controls['left']]: fighter.vel[0] = -WALK_SPEED; fighter.facing = -1
-        elif keys[fighter.controls['right']]: fighter.vel[0] = WALK_SPEED; fighter.facing = 1
+        if keys[fighter.controls['left']]: fighter.vel[0] = -fighter.walk_speed; fighter.facing = -1
+        elif keys[fighter.controls['right']]: fighter.vel[0] = fighter.walk_speed; fighter.facing = 1
         else: fighter.change_state(IdleState())
     def handle_input(self, fighter, keys):
         if keys[fighter.controls['punch']]: fighter.change_state(PunchState())
@@ -415,37 +461,39 @@ class JumpState(State):
     def enter(self, fighter):
         fighter.vel[1] = JUMP_FORCE; fighter.set_anim("Jump", loop=False)
     def update(self, fighter, keys):
-        if keys[fighter.controls['left']]: fighter.vel[0] = -WALK_SPEED
-        elif keys[fighter.controls['right']]: fighter.vel[0] = WALK_SPEED
+        if keys[fighter.controls['left']]: fighter.vel[0] = -fighter.walk_speed
+        elif keys[fighter.controls['right']]: fighter.vel[0] = fighter.walk_speed
         else: fighter.vel[0] = 0
         if fighter.pos[1] >= GROUND_Y:
             fighter.pos[1] = GROUND_Y; fighter.change_state(IdleState())
 
 class AttackState(State):
-    def __init__(self, anim_name, duration, active_start, active_end, damage, h_w, h_h, h_dx, h_dy):
+    def __init__(self, anim_name, duration, active_start, active_end, damage, h_w, h_h, h_dx, h_dy, move_speed=0):
         self.anim_name = anim_name; self.duration = duration
         self.active_start = active_start; self.active_end = active_end
         self.damage = damage
         self.h_w, self.h_h = h_w, h_h; self.h_dx, self.h_dy = h_dx, h_dy
+        self.move_speed = move_speed
     def enter(self, fighter):
         fighter.set_anim(self.anim_name, loop=False)
         fighter.anim_timer = 0; fighter.vel[0] = 0; fighter.hit_connected = False
     def update(self, fighter, keys):
         fighter.anim_timer += 1
+        fighter.vel[0] = fighter.facing * self.move_speed
         if self.active_start <= fighter.anim_timer <= self.active_end:
             hx = fighter.pos[0] + (self.h_dx if fighter.facing == 1 else -self.h_dx - self.h_w)
             hy = fighter.pos[1] - self.h_dy
             fighter.hitbox = pygame.Rect(hx, hy, self.h_w, self.h_h)
-            fighter.current_damage = self.damage
+            fighter.current_damage = fighter.damage_for(self.anim_name, self.damage)
         else: fighter.hitbox = None
         if fighter.anim_timer >= self.duration: fighter.change_state(IdleState())
 
 class PunchState(AttackState):
     def __init__(self): super().__init__("Punch", 24, 8, 16, PUNCH_DAMAGE, 60, 40, 20, 90)
 class KickState(AttackState):
-    def __init__(self): super().__init__("Kick", 30, 10, 20, KICK_DAMAGE, 70, 30, 20, 60)
+    def __init__(self): super().__init__("Kick", 30, 9, 21, KICK_DAMAGE, 86, 34, 24, 62, move_speed=2.4)
 class SpecialState(AttackState):
-    def __init__(self): super().__init__("Special", 40, 15, 30, SPECIAL_DAMAGE, 100, 100, 10, 120)
+    def __init__(self): super().__init__("Special", 40, 15, 30, SPECIAL_DAMAGE, 100, 100, 10, 120, move_speed=0.8)
     def enter(self, fighter): super().enter(fighter); fighter.special_meter = 0
 
 class BlockState(State):
@@ -472,8 +520,11 @@ class KOState(State):
 
 # --- Fighter ---
 class Fighter:
-    def __init__(self, pid, name, color, x, facing, controls):
-        self.pid = pid; self.name = name; self.color = color
+    def __init__(self, pid, character_id, color, x, facing, controls):
+        self.pid = pid; self.character_id = character_id; self.color = color
+        self.stats = CHARACTER_STATS.get(character_id, CHARACTER_STATS["Fighter"])
+        self.name = self.stats["display"]
+        self.walk_speed = WALK_SPEED * self.stats.get("speed", 1.0)
         self.pos = [x, GROUND_Y]; self.vel = [0, 0]; self.facing = facing
         self.health = MAX_HEALTH; self.special_meter = 0
         self.controls = controls
@@ -484,6 +535,10 @@ class Fighter:
         self.frames = assets.sprites[self.pid][self.current_anim]
         self.frame_index = 0; self.anim_speed = 0.2; self.loop_anim = True
         self.state = IdleState(); self.state.enter(self)
+
+    def damage_for(self, anim_name, fallback):
+        key = {"Punch": "punch", "Kick": "kick", "Special": "special"}.get(anim_name)
+        return self.stats.get(key, fallback) if key else fallback
 
     def set_anim(self, name, loop=True):
         if self.current_anim != name:
@@ -561,8 +616,10 @@ class GameManager:
     def start_fight(self, vs_ai):
         self.touch_ui.clear()
         self.ai_mode = vs_ai; self.ai = AIController(self.ctrl_p2) if vs_ai else None
-        self.p1 = Fighter("P1", "Fighter Ninja", P1_COLOR, 300, 1, self.ctrl_p1)
-        self.p2 = Fighter("P2", "Shinobi AI" if vs_ai else "Shinobi", P2_COLOR, 700, -1, self.ctrl_p2)
+        self.p1 = Fighter("P1", "Fighter", P1_COLOR, 300, 1, self.ctrl_p1)
+        self.p2 = Fighter("P2", "Shinobi", P2_COLOR, 700, -1, self.ctrl_p2)
+        if vs_ai:
+            self.p2.name = f"{self.p2.name} AI"
         self.reset_round(); self.state = "FIGHT"
 
     def reset_round(self):
@@ -740,9 +797,13 @@ async def main():
             if game.state == "MENU":
                 game.start_fight(True)
             elif game.state == "GAME_OVER":
-                game._GameManager__restart()
+                game.start_fight(True)
+
+        if web_restart_requested() and game.state in ("ROUND_END", "GAME_OVER", "MENU"):
+            game.start_fight(True)
 
         game.update()
+        publish_web_state(game)
         game.draw(game_surface)
         present_game()
         pygame.display.flip()
