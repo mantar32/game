@@ -81,6 +81,33 @@ CHARACTER_STATS = {
         "special": 24,
         "speed": 0.98,
     },
+    "Converted_Vampire": {
+        "display": "Converted Vampire",
+        "role": "Vampir",
+        "tip": "Dengeli isirik",
+        "punch": 8,
+        "kick": 13,
+        "special": 22,
+        "speed": 1.03,
+    },
+    "Countess_Vampire": {
+        "display": "Countess Vampire",
+        "role": "Kontes",
+        "tip": "Kan buyusu",
+        "punch": 7,
+        "kick": 12,
+        "special": 25,
+        "speed": 1.0,
+    },
+    "Vampire_Girl": {
+        "display": "Vampire Girl",
+        "role": "Atik",
+        "tip": "Seri vampir",
+        "punch": 8,
+        "kick": 14,
+        "special": 21,
+        "speed": 1.09,
+    },
 }
 
 # Colors
@@ -483,7 +510,7 @@ class SpriteManager:
     def resolve_anim_path(self, folder_name, anim_file):
         fallbacks = {
             "Jump.png": ["Flight.png", "Run.png", "Walk.png", "Idle.png"],
-            "Shield.png": ["Idle.png"],
+            "Shield.png": ["Protect.png", "Idle.png"],
             "Attack_3.png": ["Attack_4.png", "Attack_2.png"],
         }
         for file_name in [anim_file] + fallbacks.get(anim_file, []):

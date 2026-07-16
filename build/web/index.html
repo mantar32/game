@@ -255,6 +255,9 @@ const characterCatalog = {
     Gotoku: { label: "GOTOKU", role: "HAYALET", price: 180 },
     Onre: { label: "ONRE", role: "UCUCU", price: 220 },
     Yurei: { label: "YUREI", role: "EFSUNLU", price: 260 },
+    Converted_Vampire: { label: "VAMPIR", role: "DENGELI", price: 300 },
+    Countess_Vampire: { label: "KONTES", role: "BUYU", price: 340 },
+    Vampire_Girl: { label: "VAMP GIRL", role: "ATIK", price: 380 },
 };
 const STARTING_COINS = 80;
 const WIN_REWARD = 20;
@@ -804,7 +807,7 @@ setInterval(updateRestartButton, 120);
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
-            width: min(700px, calc(100vw - 28px));
+            width: min(760px, calc(100vw - 24px));
             pointer-events: auto;
             touch-action: none;
         }
@@ -832,20 +835,20 @@ setInterval(updateRestartButton, 120);
         }
 
         .character-button {
-            min-width: 92px;
-            min-height: 42px;
+            min-width: 84px;
+            min-height: 40px;
             border: 2px solid rgba(255, 255, 255, 0.62);
             border-radius: 12px;
             background: rgba(15, 25, 42, 0.86);
             color: #fff;
-            font: 800 13px/1 Arial, sans-serif;
+            font: 800 12px/1 Arial, sans-serif;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
-            padding: 4px 8px;
+            gap: 3px;
+            padding: 3px 6px;
             touch-action: none;
         }
 
@@ -922,16 +925,16 @@ setInterval(updateRestartButton, 120);
 
             #character-select {
                 top: 62%;
-                width: min(600px, calc(100vw - 24px));
+                width: min(640px, calc(100vw - 20px));
                 gap: 5px;
             }
 
             .character-button {
-                min-width: 84px;
-                min-height: 34px;
+                min-width: 74px;
+                min-height: 32px;
                 border-width: 2px;
                 border-radius: 10px;
-                font-size: 11px;
+                font-size: 10px;
                 gap: 2px;
                 padding: 2px 6px;
             }
@@ -1066,6 +1069,9 @@ height="600px"
         <button class="character-button" data-character="Gotoku" type="button" aria-pressed="false"><span>GOTOKU</span><small>180 COIN</small></button>
         <button class="character-button" data-character="Onre" type="button" aria-pressed="false"><span>ONRE</span><small>220 COIN</small></button>
         <button class="character-button" data-character="Yurei" type="button" aria-pressed="false"><span>YUREI</span><small>260 COIN</small></button>
+        <button class="character-button" data-character="Converted_Vampire" type="button" aria-pressed="false"><span>VAMPIR</span><small>300 COIN</small></button>
+        <button class="character-button" data-character="Countess_Vampire" type="button" aria-pressed="false"><span>KONTES</span><small>340 COIN</small></button>
+        <button class="character-button" data-character="Vampire_Girl" type="button" aria-pressed="false"><span>VAMP GIRL</span><small>380 COIN</small></button>
     </div>
     <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
     <button id="home-button" type="button" hidden>ANASAYFA</button>
