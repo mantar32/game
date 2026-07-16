@@ -213,23 +213,30 @@ def publish_web_state(game):
     if web_platform is None:
         return
     try:
-        player_dead = bool(hasattr(game, "p1") and (game.p1.health <= 0 or game.p2.health <= 0))
+        p1_dead = bool(hasattr(game, "p1") and game.p1.health <= 0)
+        p2_dead = bool(hasattr(game, "p2") and game.p2.health <= 0)
+        player_dead = p1_dead or p2_dead
         p1_won = bool(hasattr(game, "p1") and game.state == "GAME_OVER" and game.p1.rounds_won >= ROUNDS_TO_WIN)
         match_id = getattr(game, "match_id", 0)
         setattr(web_platform.window, "dovus_state", game.state)
         setattr(web_platform.window, "dovus_player_dead", player_dead)
+        setattr(web_platform.window, "dovus_p1_dead", p1_dead)
+        setattr(web_platform.window, "dovus_p2_dead", p2_dead)
         setattr(web_platform.window, "dovus_game_over", game.state == "GAME_OVER")
         setattr(web_platform.window, "dovus_p1_won", p1_won)
         setattr(web_platform.window, "dovus_match_id", match_id)
         web_platform.window.eval(
             "globalThis.dovus_state = %r; globalThis.dovus_player_dead = %s; globalThis.dovus_game_over = %s; "
-            "globalThis.dovus_p1_won = %s; globalThis.dovus_match_id = %d"
+            "globalThis.dovus_p1_won = %s; globalThis.dovus_match_id = %d; "
+            "globalThis.dovus_p1_dead = %s; globalThis.dovus_p2_dead = %s"
             % (
                 game.state,
                 "true" if player_dead else "false",
                 "true" if game.state == "GAME_OVER" else "false",
                 "true" if p1_won else "false",
                 match_id,
+                "true" if p1_dead else "false",
+                "true" if p2_dead else "false",
             )
         )
     except Exception:

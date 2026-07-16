@@ -205,6 +205,8 @@ globalThis.dovus_state = "MENU";
 globalThis.dovus_player_dead = false;
 globalThis.dovus_game_over = false;
 globalThis.dovus_p1_won = false;
+globalThis.dovus_p1_dead = false;
+globalThis.dovus_p2_dead = false;
 globalThis.dovus_match_id = 0;
 globalThis.dovus_character = globalThis.dovus_character || "Fighter";
 
@@ -217,7 +219,8 @@ const characterCatalog = {
     Yurei: { label: "YUREI", role: "EFSUNLU", price: 260 },
 };
 const STARTING_COINS = 80;
-const WIN_REWARD = 50;
+const WIN_REWARD = 20;
+const DEATH_PENALTY = 5;
 const storageKeys = {
     coins: "dovus_coins",
     unlocked: "dovus_unlocked",
@@ -245,13 +248,13 @@ function readUnlockedCharacters() {
 
 globalThis.dovus_coins = readStoredNumber(storageKeys.coins, STARTING_COINS);
 globalThis.dovus_unlocked = readUnlockedCharacters();
-let lastRewardedMatch = readStoredNumber(storageKeys.rewardedMatch, 0);
+let lastSettledMatch = readStoredNumber(storageKeys.rewardedMatch, 0);
 
 function saveEconomy() {
     try {
         localStorage.setItem(storageKeys.coins, String(globalThis.dovus_coins));
         localStorage.setItem(storageKeys.unlocked, JSON.stringify(globalThis.dovus_unlocked));
-        localStorage.setItem(storageKeys.rewardedMatch, String(lastRewardedMatch));
+        localStorage.setItem(storageKeys.rewardedMatch, String(lastSettledMatch));
     } catch {
         // localStorage kapaliysa oyun yine calisir, sadece satin alma kalici olmaz.
     }
@@ -310,18 +313,24 @@ function renderEconomyUI(message = "") {
     });
 }
 
-function claimWinReward() {
+function settleMatchEconomy() {
     const matchId = Number(globalThis.dovus_match_id || 0);
     if (
         globalThis.dovus_state === "GAME_OVER" &&
-        globalThis.dovus_p1_won &&
         matchId > 0 &&
-        matchId !== lastRewardedMatch
+        matchId !== lastSettledMatch
     ) {
-        globalThis.dovus_coins += WIN_REWARD;
-        lastRewardedMatch = matchId;
+        let message = "";
+        if (globalThis.dovus_p1_won) {
+            globalThis.dovus_coins += WIN_REWARD;
+            message = `Round kazandin: +${WIN_REWARD} coin`;
+        } else if (globalThis.dovus_p1_dead) {
+            globalThis.dovus_coins = Math.max(0, globalThis.dovus_coins - DEATH_PENALTY);
+            message = `Oldun: -${DEATH_PENALTY} coin`;
+        }
+        lastSettledMatch = matchId;
         saveEconomy();
-        renderEconomyUI(`Kazandin: +${WIN_REWARD} coin`);
+        renderEconomyUI(message);
     }
 }
 
@@ -400,7 +409,7 @@ function restartFight() {
 }
 
 function updateRestartButton() {
-    claimWinReward();
+    settleMatchEconomy();
     const isMenu = globalThis.dovus_state === "MENU";
     const startButton = document.getElementById("start-button");
     if (startButton) {
@@ -423,10 +432,13 @@ function updateRestartButton() {
     const shouldShow = Boolean(
         globalThis.dovus_game_over ||
         globalThis.dovus_player_dead ||
+        globalThis.dovus_p1_dead ||
+        globalThis.dovus_p2_dead ||
         globalThis.dovus_state === "GAME_OVER" ||
         globalThis.dovus_state === "ROUND_END"
     );
     button.hidden = !shouldShow;
+    button.style.display = shouldShow ? "block" : "";
 }
 
 function setupTouchKeyboard() {
