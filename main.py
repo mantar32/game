@@ -23,7 +23,7 @@ BLOCK_REDUCTION = 0.0
 SPECIAL_RECHARGE_RATE = 0.08
 MAX_HEALTH = 100
 ROUND_TIME = 99
-ROUNDS_TO_WIN = 2
+ROUNDS_TO_WIN = 1
 
 CHARACTER_STATS = {
     "Fighter": {
@@ -187,12 +187,23 @@ def publish_web_state(game):
         return
     try:
         player_dead = bool(hasattr(game, "p1") and (game.p1.health <= 0 or game.p2.health <= 0))
+        p1_won = bool(hasattr(game, "p1") and game.state == "GAME_OVER" and game.p1.rounds_won >= ROUNDS_TO_WIN)
+        match_id = getattr(game, "match_id", 0)
         setattr(web_platform.window, "dovus_state", game.state)
         setattr(web_platform.window, "dovus_player_dead", player_dead)
         setattr(web_platform.window, "dovus_game_over", game.state == "GAME_OVER")
+        setattr(web_platform.window, "dovus_p1_won", p1_won)
+        setattr(web_platform.window, "dovus_match_id", match_id)
         web_platform.window.eval(
-            "globalThis.dovus_state = %r; globalThis.dovus_player_dead = %s; globalThis.dovus_game_over = %s"
-            % (game.state, "true" if player_dead else "false", "true" if game.state == "GAME_OVER" else "false")
+            "globalThis.dovus_state = %r; globalThis.dovus_player_dead = %s; globalThis.dovus_game_over = %s; "
+            "globalThis.dovus_p1_won = %s; globalThis.dovus_match_id = %d"
+            % (
+                game.state,
+                "true" if player_dead else "false",
+                "true" if game.state == "GAME_OVER" else "false",
+                "true" if p1_won else "false",
+                match_id,
+            )
         )
     except Exception:
         pass
@@ -688,6 +699,7 @@ class GameManager:
         self.state = "MENU"
         self.camera = Camera(); self.particles = ParticleSystem()
         self.timer = ROUND_TIME; self.last_tick = 0
+        self.match_id = 0
         self.touch_ui = MobileTouchController()
         
         self.ctrl_p1 = {'up': pygame.K_w, 'left': pygame.K_a, 'right': pygame.K_d, 'punch': pygame.K_j, 'kick': pygame.K_k, 'special': pygame.K_l, 'block': pygame.K_u}
@@ -695,6 +707,7 @@ class GameManager:
 
     def start_fight(self, vs_ai):
         self.touch_ui.clear()
+        self.match_id += 1
         self.ai_mode = vs_ai; self.ai = AIController(self.ctrl_p2) if vs_ai else None
         p1_character = web_selected_character()
         opponents = [character_id for character_id in CHARACTER_STATS if character_id != p1_character]
@@ -719,9 +732,6 @@ class GameManager:
         if self.state in ("MENU", "GAME_OVER"):
             return
         if self.state == "ROUND_END":
-            if pygame.time.get_ticks() - self.timer_end > 3000:
-                self.reset_round()
-                self.state = "FIGHT"
             self.camera.update()
             return
         
@@ -847,17 +857,8 @@ class GameManager:
             txt = font_large.render(f"{winner} KAZANDI!", True, HIGHLIGHT)
             surface.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2 - 120))
 
-            pulse = abs(math.sin(pygame.time.get_ticks() * 0.003))
-            btn_color = (int(50 + 100 * pulse), int(50 + 50 * pulse), int(180 + 60 * pulse))
-            pygame.draw.rect(surface, btn_color, (WIDTH//2 - 250, HEIGHT//2 - 20, 500, 110), border_radius=30)
-            pygame.draw.rect(surface, HIGHLIGHT, (WIDTH//2 - 250, HEIGHT//2 - 20, 500, 110), 3, border_radius=30)
-            sub = font_large.render("TEKRAR OYNA", True, (255, 255, 255))
-            surface.blit(sub, (WIDTH//2 - sub.get_width()//2, HEIGHT//2))
-
-            hint = font_small.render("Ekrana dokun!", True, (180, 180, 180))
-            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 120))
-
-            if pygame.key.get_pressed()[pygame.K_r]: self.__restart()
+            hint = font_small.render("Yeni mac icin TEKRAR BASLAT butonuna bas.", True, (180, 180, 180))
+            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 70))
             return
 
     def __restart(self):
@@ -877,12 +878,8 @@ async def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_1) and game.state == "MENU":
                     game.start_fight(True)
-                elif event.key == pygame.K_r and game.state == "GAME_OVER":
-                    game._GameManager__restart()
-            # Oyun bittiginde canvas dokunusu menuyu geri getirir.
-            elif event.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
-                if game.state == "GAME_OVER":
-                    game._GameManager__restart()
+                elif event.key == pygame.K_r and game.state in ("ROUND_END", "GAME_OVER"):
+                    game.start_fight(True)
             
             # Dokunmatik (Touch) girdilerini işleme (sadece oyun icerisinde)
             if game.state == "FIGHT":

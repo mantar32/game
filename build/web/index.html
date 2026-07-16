@@ -204,7 +204,59 @@ globalThis.__dovus_restart = false;
 globalThis.dovus_state = "MENU";
 globalThis.dovus_player_dead = false;
 globalThis.dovus_game_over = false;
+globalThis.dovus_p1_won = false;
+globalThis.dovus_match_id = 0;
 globalThis.dovus_character = globalThis.dovus_character || "Fighter";
+
+const characterCatalog = {
+    Fighter: { label: "FIGHTER", role: "DENGELI", price: 0 },
+    Shinobi: { label: "SHINOBI", role: "HIZLI", price: 80 },
+    Samurai: { label: "SAMURAI", role: "GUCLU", price: 140 },
+};
+const STARTING_COINS = 80;
+const WIN_REWARD = 50;
+const storageKeys = {
+    coins: "dovus_coins",
+    unlocked: "dovus_unlocked",
+    rewardedMatch: "dovus_rewarded_match",
+};
+
+function readStoredNumber(key, fallback) {
+    try {
+        const value = Number(localStorage.getItem(key));
+        return Number.isFinite(value) ? value : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function readUnlockedCharacters() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(storageKeys.unlocked) || "[]");
+        const values = Array.isArray(stored) ? stored : [];
+        return Array.from(new Set(["Fighter", ...values.filter((name) => characterCatalog[name])]));
+    } catch {
+        return ["Fighter"];
+    }
+}
+
+globalThis.dovus_coins = readStoredNumber(storageKeys.coins, STARTING_COINS);
+globalThis.dovus_unlocked = readUnlockedCharacters();
+let lastRewardedMatch = readStoredNumber(storageKeys.rewardedMatch, 0);
+
+function saveEconomy() {
+    try {
+        localStorage.setItem(storageKeys.coins, String(globalThis.dovus_coins));
+        localStorage.setItem(storageKeys.unlocked, JSON.stringify(globalThis.dovus_unlocked));
+        localStorage.setItem(storageKeys.rewardedMatch, String(lastRewardedMatch));
+    } catch {
+        // localStorage kapaliysa oyun yine calisir, sadece satin alma kalici olmaz.
+    }
+}
+
+function ownsCharacter(character) {
+    return globalThis.dovus_unlocked.includes(character);
+}
 
 function emitKeyboard(type, keyName) {
     const spec = touchKeyMap[keyName];
@@ -232,8 +284,51 @@ function tapStartKey() {
     emitKeyboard("keyup", "enter");
 }
 
+function setWalletMessage(message) {
+    const walletMessage = document.getElementById("wallet-message");
+    if (walletMessage) walletMessage.textContent = message || "";
+}
+
+function renderEconomyUI(message = "") {
+    const coinCount = document.getElementById("coin-count");
+    if (coinCount) coinCount.textContent = String(globalThis.dovus_coins);
+    setWalletMessage(message);
+    document.querySelectorAll(".character-button").forEach((button) => {
+        const character = button.dataset.character;
+        const catalog = characterCatalog[character];
+        if (!catalog) return;
+        const owned = ownsCharacter(character);
+        const selected = globalThis.dovus_character === character;
+        button.classList.toggle("is-selected", selected);
+        button.classList.toggle("is-locked", !owned);
+        button.setAttribute("aria-pressed", selected ? "true" : "false");
+        const small = button.querySelector("small");
+        if (small) small.textContent = owned ? catalog.role : `${catalog.price} COIN`;
+    });
+}
+
+function claimWinReward() {
+    const matchId = Number(globalThis.dovus_match_id || 0);
+    if (
+        globalThis.dovus_state === "GAME_OVER" &&
+        globalThis.dovus_p1_won &&
+        matchId > 0 &&
+        matchId !== lastRewardedMatch
+    ) {
+        globalThis.dovus_coins += WIN_REWARD;
+        lastRewardedMatch = matchId;
+        saveEconomy();
+        renderEconomyUI(`Kazandin: +${WIN_REWARD} coin`);
+    }
+}
+
 function startFightFromButton() {
     if (globalThis.dovus_state !== "MENU") return;
+    if (!ownsCharacter(globalThis.dovus_character)) {
+        globalThis.dovus_character = "Fighter";
+        renderEconomyUI("Kilitli karakter secilemez.");
+        return;
+    }
     globalThis.dovus_start = true;
     globalThis.__dovus_start = true;
     globalThis.dovus_state = "STARTING";
@@ -245,13 +340,21 @@ function startFightFromButton() {
 }
 
 function selectCharacter(character) {
-    if (!character) return;
+    const catalog = characterCatalog[character];
+    if (!catalog) return;
+    let message = "";
+    if (!ownsCharacter(character)) {
+        if (globalThis.dovus_coins < catalog.price) {
+            renderEconomyUI(`${catalog.label} icin ${catalog.price} coin lazim.`);
+            return;
+        }
+        globalThis.dovus_coins -= catalog.price;
+        globalThis.dovus_unlocked.push(character);
+        saveEconomy();
+        message = `${catalog.label} satin alindi.`;
+    }
     globalThis.dovus_character = character;
-    document.querySelectorAll(".character-button").forEach((button) => {
-        const selected = button.dataset.character === character;
-        button.classList.toggle("is-selected", selected);
-        button.setAttribute("aria-pressed", selected ? "true" : "false");
-    });
+    renderEconomyUI(message);
 }
 
 function pressTouchKey(button) {
@@ -294,10 +397,15 @@ function restartFight() {
 }
 
 function updateRestartButton() {
+    claimWinReward();
     const isMenu = globalThis.dovus_state === "MENU";
     const startButton = document.getElementById("start-button");
     if (startButton) {
         startButton.hidden = !isMenu;
+    }
+    const walletPanel = document.getElementById("wallet-panel");
+    if (walletPanel) {
+        walletPanel.hidden = !isMenu;
     }
     const characterSelect = document.getElementById("character-select");
     if (characterSelect) {
@@ -395,7 +503,10 @@ function setupTouchKeyboard() {
         button.addEventListener("touchstart", choose, { passive: false });
         button.addEventListener("click", choose);
     });
-    selectCharacter(globalThis.dovus_character);
+    if (!ownsCharacter(globalThis.dovus_character)) {
+        globalThis.dovus_character = "Fighter";
+    }
+    renderEconomyUI();
     updateRestartButton();
 }
 
@@ -586,6 +697,28 @@ setInterval(updateRestartButton, 120);
             touch-action: none;
         }
 
+        #wallet-panel {
+            position: fixed;
+            left: 50%;
+            top: 58%;
+            transform: translateX(-50%);
+            z-index: 71;
+            min-width: 280px;
+            min-height: 34px;
+            color: #fff;
+            font: 800 14px/1 Arial, sans-serif;
+            text-align: center;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
+            pointer-events: none;
+        }
+
+        #wallet-message {
+            display: block;
+            margin-top: 5px;
+            color: #ffd700;
+            font-size: 12px;
+        }
+
         .character-button {
             min-width: 104px;
             min-height: 46px;
@@ -614,6 +747,12 @@ setInterval(updateRestartButton, 120);
             background: rgba(188, 62, 48, 0.92);
         }
 
+        .character-button.is-locked {
+            border-color: rgba(255, 255, 255, 0.38);
+            background: rgba(22, 24, 32, 0.9);
+            color: rgba(255, 255, 255, 0.72);
+        }
+
         .character-button:active {
             filter: brightness(1.18);
         }
@@ -627,8 +766,13 @@ setInterval(updateRestartButton, 120);
             }
 
             #character-select {
-                top: 66%;
+                top: 68%;
                 gap: 6px;
+            }
+
+            #wallet-panel {
+                top: 60%;
+                min-width: 240px;
             }
 
             .character-button {
@@ -737,6 +881,10 @@ height="600px"
     </div>
 
     <button id="start-button" type="button">OYUNA BASLA</button>
+    <div id="wallet-panel">
+        COIN: <span id="coin-count">0</span>
+        <span id="wallet-message"></span>
+    </div>
     <div id="character-select" aria-label="Karakter secimi">
         <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><span>FIGHTER</span><small>DENGELI</small></button>
         <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false"><span>SHINOBI</span><small>HIZLI</small></button>
