@@ -473,8 +473,12 @@ class CombinedKeys:
 class SpriteManager:
     def __init__(self, base_path):
         self.base_path = base_path
-        self.sprites = {character_id: {} for character_id in CHARACTER_STATS}
-        self.load_all()
+        self.sprites = {}
+        self.anim_map = {
+            "Idle": "Idle.png", "Walk": "Run.png", "Jump": "Jump.png",
+            "Punch": "Attack_1.png", "Kick": "Attack_2.png", "Special": "Attack_3.png",
+            "Block": "Shield.png", "HitStun": "Hurt.png", "KO": "Dead.png"
+        }
         
     def resolve_anim_path(self, folder_name, anim_file):
         fallbacks = {
@@ -512,15 +516,18 @@ class SpriteManager:
             frames.append(frame)
         return frames
 
-    def load_all(self):
-        anim_map = {
-            "Idle": "Idle.png", "Walk": "Run.png", "Jump": "Jump.png",
-            "Punch": "Attack_1.png", "Kick": "Attack_2.png", "Special": "Attack_3.png",
-            "Block": "Shield.png", "HitStun": "Hurt.png", "KO": "Dead.png"
-        }
-        for folder in self.sprites:
-            for anim_name, file_name in anim_map.items():
-                self.sprites[folder][anim_name] = self.load_anim(folder, file_name)
+    def load_character(self, character_id):
+        if character_id in self.sprites:
+            return
+        self.sprites[character_id] = {}
+        for anim_name, file_name in self.anim_map.items():
+            self.sprites[character_id][anim_name] = self.load_anim(character_id, file_name)
+
+    def get_frames(self, character_id, anim_name):
+        if character_id not in CHARACTER_STATS:
+            character_id = "Fighter"
+        self.load_character(character_id)
+        return self.sprites[character_id][anim_name]
 
 assets_path = os.path.join(BASE_DIR, "assets")
 assets = SpriteManager(assets_path)
@@ -685,7 +692,7 @@ class Fighter:
         self.hit_connected = False; self.current_damage = 0
         self.is_ko = False; self.rounds_won = 0
         self.current_anim = "Idle"
-        self.frames = assets.sprites[self.character_id][self.current_anim]
+        self.frames = assets.get_frames(self.character_id, self.current_anim)
         self.frame_index = 0; self.anim_speed = 0.2; self.loop_anim = True
         self.state = IdleState(); self.state.enter(self)
 
@@ -695,7 +702,7 @@ class Fighter:
 
     def set_anim(self, name, loop=True):
         if self.current_anim != name:
-            self.current_anim = name; self.frames = assets.sprites[self.character_id][name]
+            self.current_anim = name; self.frames = assets.get_frames(self.character_id, name)
             self.frame_index = 0; self.loop_anim = loop
             if name in ["Punch", "Kick", "Special"]:
                 self.anim_speed = len(self.frames) / self.state.duration if hasattr(self.state, 'duration') else 0.3
