@@ -288,8 +288,9 @@ function releaseAllTouchKeys() {
 function restartFight() {
     globalThis.dovus_restart = true;
     globalThis.__dovus_restart = true;
+    globalThis.dovus_state = "RESTARTING";
     releaseAllTouchKeys();
-    tapStartKey();
+    updateRestartButton();
 }
 
 function updateRestartButton() {
@@ -359,14 +360,17 @@ function setupTouchKeyboard() {
     const restartButton = document.getElementById("restart-button");
     restartButton?.addEventListener("pointerdown", (event) => {
         event.preventDefault();
+        event.stopPropagation();
         restartFight();
     });
     restartButton?.addEventListener("touchstart", (event) => {
         event.preventDefault();
+        event.stopPropagation();
         restartFight();
     }, { passive: false });
     restartButton?.addEventListener("click", (event) => {
         event.preventDefault();
+        event.stopPropagation();
         restartFight();
     });
     const startButton = document.getElementById("start-button");
@@ -422,6 +426,10 @@ setInterval(updateRestartButton, 120);
             margin-left: 30px;
             font-weight: bold;
             color: rgb(120, 120, 120);
+        }
+
+        [hidden] {
+            display: none !important;
         }
 
         #progress {

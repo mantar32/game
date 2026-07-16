@@ -849,7 +849,7 @@ async def main():
             elif game.state == "GAME_OVER":
                 game.start_fight(True)
 
-        if web_restart_requested() and game.state in ("ROUND_END", "GAME_OVER", "MENU"):
+        if web_restart_requested():
             game.start_fight(True)
 
         game.update()
