@@ -37,7 +37,7 @@ try:
     pygame.mixer.init()
 except pygame.error:
     pass
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 game_surface = pygame.Surface((WIDTH, HEIGHT)).convert()
 pygame.display.set_caption("Dovus Oyunu - Mobil Surum")
 clock = pygame.time.Clock()
@@ -48,10 +48,7 @@ font_touch = pygame.font.SysFont("arial", 18, bold=True)
 
 
 def game_viewport(window_size=None):
-    if window_size is None:
-        window_size = screen.get_size()
-    win_w, win_h = window_size
-    return pygame.Rect(0, 0, max(1, win_w), max(1, win_h))
+    return pygame.Rect(0, 0, WIDTH, HEIGHT)
 
 
 def screen_to_game(pos):
@@ -67,10 +64,7 @@ def finger_to_game(event):
 
 
 def present_game():
-    viewport = game_viewport()
-    screen.fill((0, 0, 0))
-    scaled = pygame.transform.scale(game_surface, viewport.size)
-    screen.blit(scaled, viewport)
+    screen.blit(game_surface, (0, 0))
 
 # --- Sanal Dokunmatik Kontroller (Touch UI) ---
 class TouchButton:
@@ -193,6 +187,13 @@ class MobileTouchController:
                 return button
         return None
 
+    def _button_at_event_pos(self, pos):
+        direct = self._hit_test(*pos)
+        if direct:
+            return direct
+        game_pos = screen_to_game(pos)
+        return self._hit_test(*game_pos) if game_pos else None
+
     def _set_touch(self, touch_id, button):
         old_button = self.active_touches.get(touch_id)
         if old_button is button:
@@ -215,11 +216,9 @@ class MobileTouchController:
 
     def process_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            game_pos = screen_to_game(event.pos)
-            self._set_touch("mouse", self._hit_test(*game_pos) if game_pos else None)
+            self._set_touch("mouse", self._button_at_event_pos(event.pos))
         elif event.type == pygame.MOUSEMOTION and event.buttons[0]:
-            game_pos = screen_to_game(event.pos)
-            self._set_touch("mouse", self._hit_test(*game_pos) if game_pos else None)
+            self._set_touch("mouse", self._button_at_event_pos(event.pos))
         elif event.type == pygame.MOUSEBUTTONUP:
             self._set_touch("mouse", None)
         elif event.type == pygame.FINGERDOWN:
@@ -679,9 +678,6 @@ async def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.VIDEORESIZE:
-                new_size = (max(1, event.w), max(1, event.h))
-                screen = pygame.display.set_mode(new_size, pygame.RESIZABLE)
             elif event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_1) and game.state == "MENU":
                     game.start_fight(True)

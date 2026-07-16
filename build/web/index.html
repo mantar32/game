@@ -164,8 +164,8 @@ function fit_game_canvas() {
     for (const id of ["canvas", "canvas3d"]) {
         const canvas = document.getElementById(id);
         if (!canvas) continue;
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = 1024;
+        canvas.height = 600;
         canvas.style.width = "100dvw";
         canvas.style.height = "100dvh";
     }
