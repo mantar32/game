@@ -718,19 +718,19 @@ setInterval(updateRestartButton, 120);
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 70;
-            min-width: 240px;
-            min-height: 72px;
+            min-width: 220px;
+            min-height: 62px;
             border: 3px solid #ffd700;
             border-radius: 14px;
             background: rgba(30, 80, 190, 0.9);
             color: #fff;
-            font: 800 22px/1 Arial, sans-serif;
+            font: 800 20px/1 Arial, sans-serif;
             box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
             touch-action: none;
         }
 
         #start-button {
-            top: 50%;
+            top: 48%;
             background: rgba(30, 160, 70, 0.92);
         }
 
@@ -752,14 +752,14 @@ setInterval(updateRestartButton, 120);
         #character-select {
             position: fixed;
             left: 50%;
-            top: 63%;
+            top: 66%;
             transform: translateX(-50%);
             z-index: 71;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
-            width: min(680px, calc(100vw - 32px));
+            gap: 8px;
+            width: min(700px, calc(100vw - 28px));
             pointer-events: auto;
             touch-action: none;
         }
@@ -767,13 +767,13 @@ setInterval(updateRestartButton, 120);
         #wallet-panel {
             position: fixed;
             left: 50%;
-            top: 58%;
+            top: 56%;
             transform: translateX(-50%);
             z-index: 71;
             min-width: 280px;
-            min-height: 34px;
+            min-height: 30px;
             color: #fff;
-            font: 800 14px/1 Arial, sans-serif;
+            font: 800 13px/1 Arial, sans-serif;
             text-align: center;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
             pointer-events: none;
@@ -787,13 +787,13 @@ setInterval(updateRestartButton, 120);
         }
 
         .character-button {
-            min-width: 96px;
-            min-height: 46px;
+            min-width: 92px;
+            min-height: 42px;
             border: 2px solid rgba(255, 255, 255, 0.62);
             border-radius: 12px;
             background: rgba(15, 25, 42, 0.86);
             color: #fff;
-            font: 800 14px/1 Arial, sans-serif;
+            font: 800 13px/1 Arial, sans-serif;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
             display: flex;
             flex-direction: column;
@@ -847,6 +847,67 @@ setInterval(updateRestartButton, 120);
                 min-width: 82px;
                 min-height: 42px;
                 font-size: 12px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 520px) {
+            #start-button,
+            #restart-button,
+            #home-button {
+                min-width: 190px;
+                min-height: 50px;
+                font-size: 16px;
+                border-width: 2px;
+            }
+
+            #start-button {
+                top: 46%;
+            }
+
+            #wallet-panel {
+                top: 54%;
+                min-height: 24px;
+                font-size: 11px;
+            }
+
+            #wallet-message {
+                margin-top: 2px;
+                font-size: 10px;
+            }
+
+            #character-select {
+                top: 62%;
+                width: min(600px, calc(100vw - 24px));
+                gap: 5px;
+            }
+
+            .character-button {
+                min-width: 84px;
+                min-height: 34px;
+                border-width: 2px;
+                border-radius: 10px;
+                font-size: 11px;
+                gap: 2px;
+                padding: 2px 6px;
+            }
+
+            .character-button small {
+                font-size: 9px;
+            }
+        }
+
+        @media (orientation: landscape) and (min-width: 700px) {
+            #start-button {
+                top: 46%;
+            }
+
+            #wallet-panel {
+                top: 55%;
+            }
+
+            #character-select {
+                top: 64%;
+                width: min(690px, calc(100vw - 32px));
             }
         }
 

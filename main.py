@@ -891,17 +891,8 @@ class GameManager:
             sub = font_small.render("YAPAY ZEKAYA KARSI DUELLO!", True, TEXT_COLOR)
             surface.blit(sub, (WIDTH//2 - sub.get_width()//2, 210))
 
-            # Baslatma butonu HTML tarafinda tutulur.
-            selected_id = web_selected_character()
-            selected = CHARACTER_STATS.get(selected_id, CHARACTER_STATS["Fighter"])
-            choice = font_small.render(
-                f"Secili karakter: {selected['display']} - {selected['role']} - {selected['tip']}",
-                True,
-                HIGHLIGHT,
-            )
-            surface.blit(choice, (WIDTH//2 - choice.get_width()//2, HEIGHT//2 + 72))
-            hint = font_small.render("Karakter sec ve OYUNA BASLA butonuna bas.", True, (180, 180, 180))
-            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 120))
+            hint = font_small.render("Karakter sec, coin kazan, yeni savascilari ac.", True, (180, 180, 180))
+            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, 260))
             return
 
         self.p1.draw(surface, self.camera.offset); self.p2.draw(surface, self.camera.offset)
