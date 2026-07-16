@@ -53,6 +53,33 @@ CHARACTER_STATS = {
         "special": 22,
         "speed": 0.94,
     },
+    "Gotoku": {
+        "display": "Gotoku",
+        "role": "Hayalet",
+        "tip": "Dengeli ruh",
+        "punch": 8,
+        "kick": 13,
+        "special": 21,
+        "speed": 1.02,
+    },
+    "Onre": {
+        "display": "Onre",
+        "role": "Ucucu",
+        "tip": "Hizli saldiri",
+        "punch": 7,
+        "kick": 14,
+        "special": 19,
+        "speed": 1.12,
+    },
+    "Yurei": {
+        "display": "Yurei",
+        "role": "Efsunlu",
+        "tip": "Ozel guc",
+        "punch": 8,
+        "kick": 12,
+        "special": 24,
+        "speed": 0.98,
+    },
 }
 
 # Colors
@@ -428,13 +455,27 @@ class SpriteManager:
         self.sprites = {character_id: {} for character_id in CHARACTER_STATS}
         self.load_all()
         
+    def resolve_anim_path(self, folder_name, anim_file):
+        fallbacks = {
+            "Jump.png": ["Flight.png", "Run.png", "Walk.png", "Idle.png"],
+            "Shield.png": ["Idle.png"],
+            "Attack_3.png": ["Attack_4.png", "Attack_2.png"],
+        }
+        for file_name in [anim_file] + fallbacks.get(anim_file, []):
+            full_path = os.path.join(self.base_path, folder_name, file_name)
+            if os.path.exists(full_path):
+                return full_path
+        return os.path.join(self.base_path, folder_name, anim_file)
+
     def load_anim(self, folder_name, anim_file):
-        full_path = os.path.join(self.base_path, folder_name, anim_file)
+        full_path = self.resolve_anim_path(folder_name, anim_file)
         if not os.path.exists(full_path):
             surf = pygame.Surface((128, 128), pygame.SRCALPHA)
             fallback_color = (255, 0, 0) if folder_name == "Fighter" else (0, 0, 255)
             if folder_name == "Samurai":
                 fallback_color = (255, 170, 40)
+            elif folder_name in ("Gotoku", "Onre", "Yurei"):
+                fallback_color = (165, 120, 255)
             surf.fill(fallback_color)
             return [surf]
         try:

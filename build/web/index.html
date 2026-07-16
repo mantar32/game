@@ -212,6 +212,9 @@ const characterCatalog = {
     Fighter: { label: "FIGHTER", role: "DENGELI", price: 0 },
     Shinobi: { label: "SHINOBI", role: "HIZLI", price: 80 },
     Samurai: { label: "SAMURAI", role: "GUCLU", price: 140 },
+    Gotoku: { label: "GOTOKU", role: "HAYALET", price: 180 },
+    Onre: { label: "ONRE", role: "UCUCU", price: 220 },
+    Yurei: { label: "YUREI", role: "EFSUNLU", price: 260 },
 };
 const STARTING_COINS = 80;
 const WIN_REWARD = 50;
@@ -687,12 +690,14 @@ setInterval(updateRestartButton, 120);
         #character-select {
             position: fixed;
             left: 50%;
-            top: 64%;
+            top: 63%;
             transform: translateX(-50%);
             z-index: 71;
             display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 10px;
-            max-width: calc(100vw - 32px);
+            width: min(680px, calc(100vw - 32px));
             pointer-events: auto;
             touch-action: none;
         }
@@ -720,7 +725,7 @@ setInterval(updateRestartButton, 120);
         }
 
         .character-button {
-            min-width: 104px;
+            min-width: 96px;
             min-height: 46px;
             border: 2px solid rgba(255, 255, 255, 0.62);
             border-radius: 12px;
@@ -766,7 +771,7 @@ setInterval(updateRestartButton, 120);
             }
 
             #character-select {
-                top: 68%;
+                top: 67%;
                 gap: 6px;
             }
 
@@ -776,7 +781,7 @@ setInterval(updateRestartButton, 120);
             }
 
             .character-button {
-                min-width: 86px;
+                min-width: 82px;
                 min-height: 42px;
                 font-size: 12px;
             }
@@ -889,6 +894,9 @@ height="600px"
         <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><span>FIGHTER</span><small>DENGELI</small></button>
         <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false"><span>SHINOBI</span><small>HIZLI</small></button>
         <button class="character-button" data-character="Samurai" type="button" aria-pressed="false"><span>SAMURAI</span><small>GUCLU</small></button>
+        <button class="character-button" data-character="Gotoku" type="button" aria-pressed="false"><span>GOTOKU</span><small>180 COIN</small></button>
+        <button class="character-button" data-character="Onre" type="button" aria-pressed="false"><span>ONRE</span><small>220 COIN</small></button>
+        <button class="character-button" data-character="Yurei" type="button" aria-pressed="false"><span>YUREI</span><small>260 COIN</small></button>
     </div>
     <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
 
