@@ -595,7 +595,18 @@ setInterval(updateRestartButton, 120);
             color: #fff;
             font: 800 14px/1 Arial, sans-serif;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 4px 8px;
             touch-action: none;
+        }
+
+        .character-button small {
+            color: rgba(255, 255, 255, 0.78);
+            font: 700 10px/1 Arial, sans-serif;
         }
 
         .character-button.is-selected {
@@ -727,9 +738,9 @@ height="600px"
 
     <button id="start-button" type="button">OYUNA BASLA</button>
     <div id="character-select" aria-label="Karakter secimi">
-        <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true">FIGHTER</button>
-        <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false">SHINOBI</button>
-        <button class="character-button" data-character="Samurai" type="button" aria-pressed="false">SAMURAI</button>
+        <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><span>FIGHTER</span><small>DENGELI</small></button>
+        <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false"><span>SHINOBI</span><small>HIZLI</small></button>
+        <button class="character-button" data-character="Samurai" type="button" aria-pressed="false"><span>SAMURAI</span><small>GUCLU</small></button>
     </div>
     <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
 

@@ -28,6 +28,8 @@ ROUNDS_TO_WIN = 2
 CHARACTER_STATS = {
     "Fighter": {
         "display": "Fighter Ninja",
+        "role": "Dengeli",
+        "tip": "Guclu tekme",
         "punch": PUNCH_DAMAGE,
         "kick": 15,
         "special": 18,
@@ -35,6 +37,8 @@ CHARACTER_STATS = {
     },
     "Shinobi": {
         "display": "Shinobi",
+        "role": "Hizli",
+        "tip": "Seri hareket",
         "punch": 7,
         "kick": 12,
         "special": SPECIAL_DAMAGE,
@@ -42,6 +46,8 @@ CHARACTER_STATS = {
     },
     "Samurai": {
         "display": "Samurai",
+        "role": "Guclu",
+        "tip": "Agir hasar",
         "punch": 9,
         "kick": 13,
         "special": 22,
@@ -461,15 +467,23 @@ class Camera:
         else: self.offset = [0, 0]
 
 class ParticleSystem:
-    def __init__(self): self.particles = []
+    def __init__(self):
+        self.particles = []
+        self.floaters = []
+
     def emit_hit(self, x, y):
         for _ in range(15):
             angle = random.uniform(0, math.pi * 2); speed = random.uniform(2, 8)
             self.particles.append([x, y, HIGHLIGHT, math.cos(angle)*speed, math.sin(angle)*speed, random.randint(10, 30), 30])
+
     def emit_block(self, x, y):
         for _ in range(10):
             angle = random.uniform(0, math.pi * 2); speed = random.uniform(1, 5)
             self.particles.append([x, y, (100, 200, 255), math.cos(angle)*speed, math.sin(angle)*speed, random.randint(10, 20), 20])
+
+    def emit_text(self, x, y, text, color):
+        self.floaters.append([x, y, text, color, 44, 44])
+
     def update_and_draw(self, surface, cam):
         for p in self.particles[:]:
             p[0] += p[3]; p[1] += p[4]; p[5] -= 1
@@ -479,6 +493,16 @@ class ParticleSystem:
                 surf = pygame.Surface((6, 6), pygame.SRCALPHA)
                 pygame.draw.circle(surf, (*p[2], alpha), (3, 3), 3)
                 surface.blit(surf, (p[0] + cam[0] - 3, p[1] + cam[1] - 3))
+        for floater in self.floaters[:]:
+            floater[1] -= 0.9
+            floater[4] -= 1
+            if floater[4] <= 0:
+                self.floaters.remove(floater)
+            else:
+                alpha = int(255 * (floater[4] / floater[5]))
+                label = font_small.render(floater[2], True, floater[3])
+                label.set_alpha(alpha)
+                surface.blit(label, (floater[0] + cam[0] - label.get_width() // 2, floater[1] + cam[1]))
 
 # --- State Machine ---
 class State:
@@ -737,12 +761,16 @@ class GameManager:
                 attacker.hit_connected = True
                 attacker.special_meter = min(100, attacker.special_meter + 10)
                 if isinstance(defender.state, BlockState) and defender.facing != attacker.facing:
-                    defender.take_damage(attacker.current_damage * BLOCK_REDUCTION)
+                    damage = attacker.current_damage * BLOCK_REDUCTION
+                    defender.take_damage(damage)
                     self.particles.emit_block(defender.pos[0], defender.pos[1]-60)
+                    self.particles.emit_text(defender.pos[0], defender.pos[1]-145, "BLOK", (120, 210, 255))
                 else:
-                    defender.take_damage(attacker.current_damage)
+                    damage = attacker.current_damage
+                    defender.take_damage(damage)
                     defender.change_state(HitStunState())
                     self.particles.emit_hit(defender.pos[0], defender.pos[1]-60); self.camera.shake()
+                    self.particles.emit_text(defender.pos[0], defender.pos[1]-145, f"-{int(damage)}", (255, 230, 80))
                 if defender.health <= 0 and self.state == "FIGHT": self.handle_round_end(False, attacker)
 
     def handle_round_end(self, timeout, winner=None):
@@ -771,6 +799,14 @@ class GameManager:
             surface.blit(sub, (WIDTH//2 - sub.get_width()//2, 210))
 
             # Baslatma butonu HTML tarafinda tutulur.
+            selected_id = web_selected_character()
+            selected = CHARACTER_STATS.get(selected_id, CHARACTER_STATS["Fighter"])
+            choice = font_small.render(
+                f"Secili karakter: {selected['display']} - {selected['role']} - {selected['tip']}",
+                True,
+                HIGHLIGHT,
+            )
+            surface.blit(choice, (WIDTH//2 - choice.get_width()//2, HEIGHT//2 + 72))
             hint = font_small.render("Karakter sec ve OYUNA BASLA butonuna bas.", True, (180, 180, 180))
             surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 120))
             return
@@ -780,15 +816,24 @@ class GameManager:
 
         pygame.draw.rect(surface, (255,0,0), (50, 30, 400, 30))
         pygame.draw.rect(surface, (0,255,0), (50, 30, 400 * (self.p1.health/MAX_HEALTH), 30))
+        pygame.draw.rect(surface, TEXT_COLOR, (50, 30, 400, 30), 2)
         pygame.draw.rect(surface, (0,0,255), (50, 65, 200 * (self.p1.special_meter/100), 10))
+        pygame.draw.rect(surface, TEXT_COLOR, (50, 65, 200, 10), 1)
         surface.blit(font_small.render(self.p1.name, True, TEXT_COLOR), (50, 5))
+        if self.p1.special_meter >= 100 and self.state == "FIGHT":
+            surface.blit(font_touch.render("OZEL HAZIR", True, HIGHLIGHT), (260, 61))
         for i in range(ROUNDS_TO_WIN): pygame.draw.circle(surface, HIGHLIGHT if i < self.p1.rounds_won else (100,100,100), (50 + i*25, 85), 10)
 
         pygame.draw.rect(surface, (255,0,0), (WIDTH-450, 30, 400, 30))
         pygame.draw.rect(surface, (0,255,0), (WIDTH-450 + 400*(1-self.p2.health/MAX_HEALTH), 30, 400*(self.p2.health/MAX_HEALTH), 30))
+        pygame.draw.rect(surface, TEXT_COLOR, (WIDTH-450, 30, 400, 30), 2)
         pygame.draw.rect(surface, (0,0,255), (WIDTH-250, 65, 200 * (self.p2.special_meter/100), 10))
+        pygame.draw.rect(surface, TEXT_COLOR, (WIDTH-250, 65, 200, 10), 1)
         name_surf = font_small.render(self.p2.name, True, TEXT_COLOR)
         surface.blit(name_surf, (WIDTH - 50 - name_surf.get_width(), 5))
+        if self.p2.special_meter >= 100 and self.state == "FIGHT":
+            ready = font_touch.render("OZEL HAZIR", True, HIGHLIGHT)
+            surface.blit(ready, (WIDTH - 260 - ready.get_width(), 61))
         for i in range(ROUNDS_TO_WIN): pygame.draw.circle(surface, HIGHLIGHT if i < self.p2.rounds_won else (100,100,100), (WIDTH - 50 - i*25, 85), 10)
 
         t_surf = font_large.render(str(self.timer), True, HIGHLIGHT)
