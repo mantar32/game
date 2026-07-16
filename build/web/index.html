@@ -23,7 +23,7 @@ from pathlib import Path
 # do not rename
 async def custom_site():
     import embed
-    platform.document.body.style.background = "#7f7f7f"
+    platform.document.body.style.background = "#0d1b2a"
 
     platform.window.transfer.hidden = true
     platform.window.canvas.style.visibility = "visible"
@@ -158,6 +158,38 @@ function show_infobox() {
     infobox.style.top = top + "px";
 }
 
+function force_fullscreen_canvas() {
+    document.documentElement.style.setProperty("background", "#0d1b2a", "important");
+    document.body.style.setProperty("background", "#0d1b2a", "important");
+    document.body.style.setProperty("margin", "0", "important");
+    document.body.style.setProperty("padding", "0", "important");
+    document.body.style.setProperty("overflow", "hidden", "important");
+    for (const id of ["canvas", "canvas3d"]) {
+        const canvas = document.getElementById(id);
+        if (!canvas) continue;
+        canvas.width = 1024;
+        canvas.height = 600;
+        canvas.style.setProperty("position", "fixed", "important");
+        canvas.style.setProperty("inset", "0", "important");
+        canvas.style.setProperty("left", "0", "important");
+        canvas.style.setProperty("top", "0", "important");
+        canvas.style.setProperty("right", "0", "important");
+        canvas.style.setProperty("bottom", "0", "important");
+        canvas.style.setProperty("width", "100vw", "important");
+        canvas.style.setProperty("height", "100vh", "important");
+        canvas.style.setProperty("width", "100dvw", "important");
+        canvas.style.setProperty("height", "100dvh", "important");
+        canvas.style.setProperty("max-width", "none", "important");
+        canvas.style.setProperty("max-height", "none", "important");
+        canvas.style.setProperty("min-width", "100vw", "important");
+        canvas.style.setProperty("min-height", "100vh", "important");
+        canvas.style.setProperty("margin", "0", "important");
+        canvas.style.setProperty("padding", "0", "important");
+        canvas.style.setProperty("transform", "none", "important");
+        canvas.style.setProperty("object-fit", "fill", "important");
+    }
+}
+
 function fit_game_canvas() {
     const width = Math.max(1, Math.floor(window.visualViewport?.width || window.innerWidth || 1024));
     const height = Math.max(1, Math.floor(window.visualViewport?.height || window.innerHeight || 600));
@@ -177,11 +209,14 @@ function fit_game_canvas() {
     if (typeof window_resize === "function") {
         window_resize();
     }
+    force_fullscreen_canvas();
+    requestAnimationFrame(force_fullscreen_canvas);
 }
 
 window.addEventListener("resize", fit_game_canvas);
 window.visualViewport?.addEventListener("resize", fit_game_canvas);
 window.addEventListener("orientationchange", () => setTimeout(fit_game_canvas, 250));
+setInterval(force_fullscreen_canvas, 500);
 
 const touchKeyMap = {
     a: { key: "a", code: "KeyA", keyCode: 65 },
@@ -628,20 +663,30 @@ setInterval(updateRestartButton, 120);
         /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
         /* average size of droid screen 470dp x 320dp  */
         canvas.emscripten {
-            border: 0px none;
-            background-color: transparent;
-            width: 100vw;
-            height: 100vh;
-            width: 100dvw;
-            height: 100dvh;
+            border: 0px none !important;
+            background-color: transparent !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            width: 100dvw !important;
+            height: 100dvh !important;
+            min-width: 100vw !important;
+            min-height: 100vh !important;
+            max-width: none !important;
+            max-height: none !important;
             z-index: 5;
 
-            padding: 0;
-            margin: 0;
+            padding: 0 !important;
+            margin: 0 !important;
 
-            position: fixed;
-            inset: 0;
-            display: block;
+            position: fixed !important;
+            inset: 0 !important;
+            left: 0 !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            display: block !important;
+            transform: none !important;
+            object-fit: fill !important;
             touch-action: none;
         }
 
@@ -918,7 +963,7 @@ setInterval(updateRestartButton, 120);
             height: 100dvh;
             overflow: hidden;
             overscroll-behavior: none;
-            background-color: #0d1b2a;
+            background-color: #0d1b2a !important;
         }
 
         body {
@@ -934,7 +979,7 @@ setInterval(updateRestartButton, 120);
             inset: 0;
             touch-action: none;
             overscroll-behavior: none;
-            background-color:#0d1b2a;
+            background-color:#0d1b2a !important;
         }
 
         .topright{
