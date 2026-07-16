@@ -231,6 +231,15 @@ function tapStartKey() {
     emitKeyboard("keyup", "enter");
 }
 
+function startFightFromButton() {
+    globalThis.dovus_start = true;
+    globalThis.__dovus_start = true;
+    globalThis.dovus_state = "STARTING";
+    const startButton = document.getElementById("start-button");
+    if (startButton) startButton.hidden = true;
+    tapStartKey();
+}
+
 function pressTouchKey(button) {
     const keyName = button.dataset.key;
     if (!keyName || activeTouchKeys.has(keyName)) return;
@@ -270,9 +279,19 @@ function restartFight() {
 }
 
 function updateRestartButton() {
+    const startButton = document.getElementById("start-button");
+    if (startButton) {
+        const showStart = globalThis.dovus_state === "MENU";
+        startButton.hidden = !showStart;
+    }
     const button = document.getElementById("restart-button");
     if (!button) return;
-    const shouldShow = Boolean(globalThis.dovus_game_over || globalThis.dovus_player_dead || globalThis.dovus_state === "GAME_OVER");
+    const shouldShow = Boolean(
+        globalThis.dovus_game_over ||
+        globalThis.dovus_player_dead ||
+        globalThis.dovus_state === "GAME_OVER" ||
+        globalThis.dovus_state === "ROUND_END"
+    );
     button.hidden = !shouldShow;
 }
 
@@ -327,6 +346,19 @@ function setupTouchKeyboard() {
     restartButton?.addEventListener("click", (event) => {
         event.preventDefault();
         restartFight();
+    });
+    const startButton = document.getElementById("start-button");
+    startButton?.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        startFightFromButton();
+    });
+    startButton?.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        startFightFromButton();
+    }, { passive: false });
+    startButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        startFightFromButton();
     });
 }
 
@@ -469,10 +501,10 @@ setInterval(updateRestartButton, 120);
             filter: brightness(1.25);
         }
 
+        #start-button,
         #restart-button {
             position: fixed;
             left: 50%;
-            top: 62%;
             transform: translate(-50%, -50%);
             z-index: 70;
             min-width: 240px;
@@ -486,6 +518,16 @@ setInterval(updateRestartButton, 120);
             touch-action: none;
         }
 
+        #start-button {
+            top: 50%;
+            background: rgba(30, 160, 70, 0.92);
+        }
+
+        #restart-button {
+            top: 62%;
+        }
+
+        #start-button:active,
         #restart-button:active {
             filter: brightness(1.2);
         }
@@ -588,6 +630,7 @@ height="600px"
         </div>
     </div>
 
+    <button id="start-button" type="button">OYUNA BASLA</button>
     <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
 
     <div id="infobox">Loading, please wait ...</div>

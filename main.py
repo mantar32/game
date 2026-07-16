@@ -78,51 +78,78 @@ WEB_KEY_NAMES = {
 }
 
 
-def web_key_pressed(key):
-    key_name = WEB_KEY_NAMES.get(key)
-    if not key_name or web_platform is None:
-        return False
-    try:
-        keys = getattr(web_platform.window, "dovus_keys", None) or getattr(web_platform.window, "__dovus_keys", None)
-        if keys is None:
-            return False
-        try:
-            return bool(keys[key_name])
-        except Exception:
-            return bool(getattr(keys, key_name, False))
-    except Exception:
-        return False
-
-
-def web_start_requested():
+def web_get_bool(name):
     if web_platform is None:
         return False
     try:
-        if bool(getattr(web_platform.window, "dovus_start", False)) or bool(getattr(web_platform.window, "__dovus_start", False)):
-            for name in ("dovus_start", "__dovus_start"):
-                try:
-                    setattr(web_platform.window, name, False)
-                except Exception:
-                    pass
-            return True
+        return bool(getattr(web_platform.window, name, False))
+    except Exception:
+        pass
+    try:
+        return bool(web_platform.window[name])
+    except Exception:
+        pass
+    try:
+        return bool(web_platform.window.eval(f"Boolean(globalThis.{name})"))
     except Exception:
         return False
+
+
+def web_set_bool(name, value):
+    if web_platform is None:
+        return
+    try:
+        setattr(web_platform.window, name, value)
+    except Exception:
+        pass
+    try:
+        web_platform.window.eval(f"globalThis.{name} = {'true' if value else 'false'}")
+    except Exception:
+        pass
+
+
+def web_key_state(key_name):
+    if web_platform is None:
+        return False
+    for store_name in ("dovus_keys", "__dovus_keys"):
+        try:
+            keys = getattr(web_platform.window, store_name, None)
+            if keys is not None:
+                try:
+                    return bool(keys[key_name])
+                except Exception:
+                    if bool(getattr(keys, key_name, False)):
+                        return True
+        except Exception:
+            pass
+        try:
+            if bool(web_platform.window.eval(f"Boolean(globalThis.{store_name} && globalThis.{store_name}['{key_name}'])")):
+                return True
+        except Exception:
+            pass
+    return False
+
+
+def web_key_pressed(key):
+    key_name = WEB_KEY_NAMES.get(key)
+    if not key_name:
+        return False
+    return web_key_state(key_name)
+
+
+def web_start_requested():
+    if web_get_bool("dovus_start") or web_get_bool("__dovus_start"):
+        web_set_bool("dovus_start", False)
+        web_set_bool("__dovus_start", False)
+        return True
     return False
 
 
 def web_restart_requested():
-    if web_platform is None:
-        return False
-    try:
-        if bool(getattr(web_platform.window, "dovus_restart", False)) or bool(getattr(web_platform.window, "__dovus_restart", False)):
-            for name in ("dovus_restart", "__dovus_restart"):
-                try:
-                    setattr(web_platform.window, name, False)
-                except Exception:
-                    pass
-            return True
-    except Exception:
-        return False
+    if web_get_bool("dovus_restart") or web_get_bool("__dovus_restart"):
+        web_set_bool("dovus_restart", False)
+        web_set_bool("__dovus_restart", False)
+        return True
     return False
 
 
@@ -130,10 +157,14 @@ def publish_web_state(game):
     if web_platform is None:
         return
     try:
-        player_dead = bool(hasattr(game, "p1") and game.p1.health <= 0)
+        player_dead = bool(hasattr(game, "p1") and (game.p1.health <= 0 or game.p2.health <= 0))
         setattr(web_platform.window, "dovus_state", game.state)
         setattr(web_platform.window, "dovus_player_dead", player_dead)
         setattr(web_platform.window, "dovus_game_over", game.state == "GAME_OVER")
+        web_platform.window.eval(
+            "globalThis.dovus_state = %r; globalThis.dovus_player_dead = %s; globalThis.dovus_game_over = %s"
+            % (game.state, "true" if player_dead else "false", "true" if game.state == "GAME_OVER" else "false")
+        )
     except Exception:
         pass
 
