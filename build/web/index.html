@@ -204,6 +204,7 @@ globalThis.__dovus_restart = false;
 globalThis.dovus_state = "MENU";
 globalThis.dovus_player_dead = false;
 globalThis.dovus_game_over = false;
+globalThis.dovus_character = globalThis.dovus_character || "Fighter";
 
 function emitKeyboard(type, keyName) {
     const spec = touchKeyMap[keyName];
@@ -232,12 +233,25 @@ function tapStartKey() {
 }
 
 function startFightFromButton() {
+    if (globalThis.dovus_state !== "MENU") return;
     globalThis.dovus_start = true;
     globalThis.__dovus_start = true;
     globalThis.dovus_state = "STARTING";
     const startButton = document.getElementById("start-button");
     if (startButton) startButton.hidden = true;
+    const characterSelect = document.getElementById("character-select");
+    if (characterSelect) characterSelect.hidden = true;
     tapStartKey();
+}
+
+function selectCharacter(character) {
+    if (!character) return;
+    globalThis.dovus_character = character;
+    document.querySelectorAll(".character-button").forEach((button) => {
+        const selected = button.dataset.character === character;
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
 }
 
 function pressTouchKey(button) {
@@ -279,10 +293,18 @@ function restartFight() {
 }
 
 function updateRestartButton() {
+    const isMenu = globalThis.dovus_state === "MENU";
     const startButton = document.getElementById("start-button");
     if (startButton) {
-        const showStart = globalThis.dovus_state === "MENU";
-        startButton.hidden = !showStart;
+        startButton.hidden = !isMenu;
+    }
+    const characterSelect = document.getElementById("character-select");
+    if (characterSelect) {
+        characterSelect.hidden = !isMenu;
+    }
+    const touchControls = document.getElementById("touch-controls");
+    if (touchControls) {
+        touchControls.hidden = globalThis.dovus_state !== "FIGHT";
     }
     const button = document.getElementById("restart-button");
     if (!button) return;
@@ -360,6 +382,17 @@ function setupTouchKeyboard() {
         event.preventDefault();
         startFightFromButton();
     });
+    document.querySelectorAll(".character-button").forEach((button) => {
+        const choose = (event) => {
+            event.preventDefault();
+            selectCharacter(button.dataset.character);
+        };
+        button.addEventListener("pointerdown", choose);
+        button.addEventListener("touchstart", choose, { passive: false });
+        button.addEventListener("click", choose);
+    });
+    selectCharacter(globalThis.dovus_character);
+    updateRestartButton();
 }
 
 window.addEventListener("blur", releaseAllTouchKeys);
@@ -532,6 +565,60 @@ setInterval(updateRestartButton, 120);
             filter: brightness(1.2);
         }
 
+        #character-select {
+            position: fixed;
+            left: 50%;
+            top: 64%;
+            transform: translateX(-50%);
+            z-index: 71;
+            display: flex;
+            gap: 10px;
+            max-width: calc(100vw - 32px);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .character-button {
+            min-width: 104px;
+            min-height: 46px;
+            border: 2px solid rgba(255, 255, 255, 0.62);
+            border-radius: 12px;
+            background: rgba(15, 25, 42, 0.86);
+            color: #fff;
+            font: 800 14px/1 Arial, sans-serif;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            touch-action: none;
+        }
+
+        .character-button.is-selected {
+            border-color: #ffd700;
+            background: rgba(188, 62, 48, 0.92);
+        }
+
+        .character-button:active {
+            filter: brightness(1.18);
+        }
+
+        @media (max-width: 520px) {
+            #start-button,
+            #restart-button {
+                min-width: 210px;
+                min-height: 64px;
+                font-size: 19px;
+            }
+
+            #character-select {
+                top: 66%;
+                gap: 6px;
+            }
+
+            .character-button {
+                min-width: 86px;
+                min-height: 42px;
+                font-size: 12px;
+            }
+        }
+
         html {
             width: 100%;
             height: 100%;
@@ -616,7 +703,7 @@ height="600px"
     oncontextmenu="event.preventDefault()" tabindex=1 hidden>
     </canvas>
 
-    <div id="touch-controls" aria-hidden="true">
+    <div id="touch-controls" aria-hidden="true" hidden>
         <div class="touch-cluster left">
             <button class="touch-button" data-key="w" type="button">^<br>ZIPLA</button>
             <button class="touch-button" data-key="a" type="button">&lt;<br>SOL</button>
@@ -631,6 +718,11 @@ height="600px"
     </div>
 
     <button id="start-button" type="button">OYUNA BASLA</button>
+    <div id="character-select" aria-label="Karakter secimi">
+        <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true">FIGHTER</button>
+        <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false">SHINOBI</button>
+        <button class="character-button" data-character="Samurai" type="button" aria-pressed="false">SAMURAI</button>
+    </div>
     <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
 
     <div id="infobox">Loading, please wait ...</div>

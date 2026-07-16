@@ -40,6 +40,13 @@ CHARACTER_STATS = {
         "special": SPECIAL_DAMAGE,
         "speed": 1.08,
     },
+    "Samurai": {
+        "display": "Samurai",
+        "punch": 9,
+        "kick": 13,
+        "special": 22,
+        "speed": 0.94,
+    },
 }
 
 # Colors
@@ -151,6 +158,22 @@ def web_restart_requested():
         web_set_bool("__dovus_restart", False)
         return True
     return False
+
+
+def web_selected_character():
+    if web_platform is None:
+        return "Fighter"
+    value = None
+    try:
+        value = getattr(web_platform.window, "dovus_character", None)
+    except Exception:
+        pass
+    if not value:
+        try:
+            value = web_platform.window.eval("globalThis.dovus_character || 'Fighter'")
+        except Exception:
+            value = None
+    return value if value in CHARACTER_STATS else "Fighter"
 
 
 def publish_web_state(game):
@@ -385,14 +408,17 @@ class CombinedKeys:
 class SpriteManager:
     def __init__(self, base_path):
         self.base_path = base_path
-        self.sprites = {"P1": {}, "P2": {}}
+        self.sprites = {character_id: {} for character_id in CHARACTER_STATS}
         self.load_all()
         
     def load_anim(self, folder_name, anim_file):
         full_path = os.path.join(self.base_path, folder_name, anim_file)
         if not os.path.exists(full_path):
             surf = pygame.Surface((128, 128), pygame.SRCALPHA)
-            surf.fill((255,0,0) if folder_name=="Fighter" else (0,0,255))
+            fallback_color = (255, 0, 0) if folder_name == "Fighter" else (0, 0, 255)
+            if folder_name == "Samurai":
+                fallback_color = (255, 170, 40)
+            surf.fill(fallback_color)
             return [surf]
         try:
             sheet = pygame.image.load(full_path).convert_alpha()
@@ -408,15 +434,14 @@ class SpriteManager:
         return frames
 
     def load_all(self):
-        mapping = [("P1", "Fighter"), ("P2", "Shinobi")]
         anim_map = {
             "Idle": "Idle.png", "Walk": "Run.png", "Jump": "Jump.png",
             "Punch": "Attack_1.png", "Kick": "Attack_2.png", "Special": "Attack_3.png",
             "Block": "Shield.png", "HitStun": "Hurt.png", "KO": "Dead.png"
         }
-        for p_id, folder in mapping:
+        for folder in self.sprites:
             for anim_name, file_name in anim_map.items():
-                self.sprites[p_id][anim_name] = self.load_anim(folder, file_name)
+                self.sprites[folder][anim_name] = self.load_anim(folder, file_name)
 
 assets_path = os.path.join(BASE_DIR, "assets")
 assets = SpriteManager(assets_path)
@@ -563,7 +588,7 @@ class Fighter:
         self.hit_connected = False; self.current_damage = 0
         self.is_ko = False; self.rounds_won = 0
         self.current_anim = "Idle"
-        self.frames = assets.sprites[self.pid][self.current_anim]
+        self.frames = assets.sprites[self.character_id][self.current_anim]
         self.frame_index = 0; self.anim_speed = 0.2; self.loop_anim = True
         self.state = IdleState(); self.state.enter(self)
 
@@ -573,7 +598,7 @@ class Fighter:
 
     def set_anim(self, name, loop=True):
         if self.current_anim != name:
-            self.current_anim = name; self.frames = assets.sprites[self.pid][name]
+            self.current_anim = name; self.frames = assets.sprites[self.character_id][name]
             self.frame_index = 0; self.loop_anim = loop
             if name in ["Punch", "Kick", "Special"]:
                 self.anim_speed = len(self.frames) / self.state.duration if hasattr(self.state, 'duration') else 0.3
@@ -647,8 +672,11 @@ class GameManager:
     def start_fight(self, vs_ai):
         self.touch_ui.clear()
         self.ai_mode = vs_ai; self.ai = AIController(self.ctrl_p2) if vs_ai else None
-        self.p1 = Fighter("P1", "Fighter", P1_COLOR, 300, 1, self.ctrl_p1)
-        self.p2 = Fighter("P2", "Shinobi", P2_COLOR, 700, -1, self.ctrl_p2)
+        p1_character = web_selected_character()
+        opponents = [character_id for character_id in CHARACTER_STATS if character_id != p1_character]
+        p2_character = random.choice(opponents) if opponents else "Shinobi"
+        self.p1 = Fighter("P1", p1_character, P1_COLOR, 300, 1, self.ctrl_p1)
+        self.p2 = Fighter("P2", p2_character, P2_COLOR, 700, -1, self.ctrl_p2)
         if vs_ai:
             self.p2.name = f"{self.p2.name} AI"
         self.reset_round(); self.state = "FIGHT"
@@ -742,16 +770,9 @@ class GameManager:
             sub = font_small.render("YAPAY ZEKAYA KARSI DUELLO!", True, TEXT_COLOR)
             surface.blit(sub, (WIDTH//2 - sub.get_width()//2, 210))
 
-            # Animasyonlu yanıp sönen büyük buton
-            pulse = abs(math.sin(pygame.time.get_ticks() * 0.003))
-            btn_color = (int(30 + 120 * pulse), int(180 + 60 * pulse), int(30 + 80 * pulse))
-            pygame.draw.rect(surface, btn_color, (WIDTH//2 - 250, HEIGHT//2 - 50, 500, 120), border_radius=30)
-            pygame.draw.rect(surface, HIGHLIGHT, (WIDTH//2 - 250, HEIGHT//2 - 50, 500, 120), 3, border_radius=30)
-            btn_txt = font_large.render("OYUNA BASLA", True, (255, 255, 255))
-            surface.blit(btn_txt, (WIDTH//2 - btn_txt.get_width()//2, HEIGHT//2 - 30))
-
-            hint = font_small.render("Ekrana herhangi bir yere dokun!", True, (180, 180, 180))
-            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 100))
+            # Baslatma butonu HTML tarafinda tutulur.
+            hint = font_small.render("Karakter sec ve OYUNA BASLA butonuna bas.", True, (180, 180, 180))
+            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 120))
             return
 
         self.p1.draw(surface, self.camera.offset); self.p2.draw(surface, self.camera.offset)
@@ -813,11 +834,9 @@ async def main():
                     game.start_fight(True)
                 elif event.key == pygame.K_r and game.state == "GAME_OVER":
                     game._GameManager__restart()
-            # Herhangi bir dokunma/tiklama - menude baslat, game over da yeniden basla
+            # Oyun bittiginde canvas dokunusu menuyu geri getirir.
             elif event.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
-                if game.state == "MENU":
-                    game.start_fight(True)
-                elif game.state == "GAME_OVER":
+                if game.state == "GAME_OVER":
                     game._GameManager__restart()
             
             # Dokunmatik (Touch) girdilerini işleme (sadece oyun icerisinde)
