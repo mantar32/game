@@ -207,7 +207,10 @@ globalThis.dovus_game_over = false;
 globalThis.dovus_p1_won = false;
 globalThis.dovus_p1_dead = false;
 globalThis.dovus_p2_dead = false;
+globalThis.dovus_restart_ready = false;
 globalThis.dovus_match_id = 0;
+globalThis.dovus_home = false;
+globalThis.__dovus_home = false;
 globalThis.dovus_character = globalThis.dovus_character || "Fighter";
 
 const characterCatalog = {
@@ -404,7 +407,22 @@ function restartFight() {
     globalThis.dovus_restart = true;
     globalThis.__dovus_restart = true;
     globalThis.dovus_state = "RESTARTING";
+    globalThis.dovus_restart_ready = false;
     releaseAllTouchKeys();
+    updateRestartButton();
+}
+
+function goHome() {
+    globalThis.dovus_home = true;
+    globalThis.__dovus_home = true;
+    globalThis.dovus_state = "MENU";
+    globalThis.dovus_player_dead = false;
+    globalThis.dovus_game_over = false;
+    globalThis.dovus_p1_dead = false;
+    globalThis.dovus_p2_dead = false;
+    globalThis.dovus_restart_ready = false;
+    releaseAllTouchKeys();
+    renderEconomyUI();
     updateRestartButton();
 }
 
@@ -427,18 +445,27 @@ function updateRestartButton() {
     if (touchControls) {
         touchControls.hidden = globalThis.dovus_state !== "FIGHT";
     }
-    const button = document.getElementById("restart-button");
-    if (!button) return;
-    const shouldShow = Boolean(
-        globalThis.dovus_game_over ||
-        globalThis.dovus_player_dead ||
-        globalThis.dovus_p1_dead ||
-        globalThis.dovus_p2_dead ||
-        globalThis.dovus_state === "GAME_OVER" ||
-        globalThis.dovus_state === "ROUND_END"
+    const shouldShowEndActions = Boolean(
+        globalThis.dovus_restart_ready &&
+        (
+            globalThis.dovus_game_over ||
+            globalThis.dovus_player_dead ||
+            globalThis.dovus_p1_dead ||
+            globalThis.dovus_p2_dead ||
+            globalThis.dovus_state === "GAME_OVER" ||
+            globalThis.dovus_state === "ROUND_END"
+        )
     );
-    button.hidden = !shouldShow;
-    button.style.display = shouldShow ? "block" : "";
+    const button = document.getElementById("restart-button");
+    if (button) {
+        button.hidden = !shouldShowEndActions;
+        button.style.display = shouldShowEndActions ? "block" : "";
+    }
+    const homeButton = document.getElementById("home-button");
+    if (homeButton) {
+        homeButton.hidden = !shouldShowEndActions;
+        homeButton.style.display = shouldShowEndActions ? "block" : "";
+    }
 }
 
 function setupTouchKeyboard() {
@@ -495,6 +522,22 @@ function setupTouchKeyboard() {
         event.preventDefault();
         event.stopPropagation();
         restartFight();
+    });
+    const homeButton = document.getElementById("home-button");
+    homeButton?.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        goHome();
+    });
+    homeButton?.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        goHome();
+    }, { passive: false });
+    homeButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        goHome();
     });
     const startButton = document.getElementById("start-button");
     startButton?.addEventListener("pointerdown", (event) => {
@@ -669,7 +712,8 @@ setInterval(updateRestartButton, 120);
         }
 
         #start-button,
-        #restart-button {
+        #restart-button,
+        #home-button {
             position: fixed;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -691,11 +735,17 @@ setInterval(updateRestartButton, 120);
         }
 
         #restart-button {
-            top: 62%;
+            top: 58%;
+        }
+
+        #home-button {
+            top: 72%;
+            background: rgba(18, 95, 125, 0.92);
         }
 
         #start-button:active,
-        #restart-button:active {
+        #restart-button:active,
+        #home-button:active {
             filter: brightness(1.2);
         }
 
@@ -776,7 +826,8 @@ setInterval(updateRestartButton, 120);
 
         @media (max-width: 520px) {
             #start-button,
-            #restart-button {
+            #restart-button,
+            #home-button {
                 min-width: 210px;
                 min-height: 64px;
                 font-size: 19px;
@@ -911,6 +962,7 @@ height="600px"
         <button class="character-button" data-character="Yurei" type="button" aria-pressed="false"><span>YUREI</span><small>260 COIN</small></button>
     </div>
     <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
+    <button id="home-button" type="button" hidden>ANASAYFA</button>
 
     <div id="infobox">Loading, please wait ...</div>
 

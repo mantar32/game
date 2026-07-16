@@ -193,6 +193,14 @@ def web_restart_requested():
     return False
 
 
+def web_home_requested():
+    if web_get_bool("dovus_home") or web_get_bool("__dovus_home"):
+        web_set_bool("dovus_home", False)
+        web_set_bool("__dovus_home", False)
+        return True
+    return False
+
+
 def web_selected_character():
     if web_platform is None:
         return "Fighter"
@@ -213,11 +221,14 @@ def publish_web_state(game):
     if web_platform is None:
         return
     try:
-        p1_dead = bool(hasattr(game, "p1") and game.p1.health <= 0)
-        p2_dead = bool(hasattr(game, "p2") and game.p2.health <= 0)
+        active_match = bool(hasattr(game, "p1") and game.state != "MENU")
+        p1_dead = bool(active_match and game.p1.health <= 0)
+        p2_dead = bool(active_match and game.p2.health <= 0)
         player_dead = p1_dead or p2_dead
         p1_won = bool(hasattr(game, "p1") and game.state == "GAME_OVER" and game.p1.rounds_won >= ROUNDS_TO_WIN)
         match_id = getattr(game, "match_id", 0)
+        timer_end = getattr(game, "timer_end", pygame.time.get_ticks())
+        restart_ready = bool(game.state in ("ROUND_END", "GAME_OVER") and pygame.time.get_ticks() - timer_end >= 1000)
         setattr(web_platform.window, "dovus_state", game.state)
         setattr(web_platform.window, "dovus_player_dead", player_dead)
         setattr(web_platform.window, "dovus_p1_dead", p1_dead)
@@ -225,10 +236,11 @@ def publish_web_state(game):
         setattr(web_platform.window, "dovus_game_over", game.state == "GAME_OVER")
         setattr(web_platform.window, "dovus_p1_won", p1_won)
         setattr(web_platform.window, "dovus_match_id", match_id)
+        setattr(web_platform.window, "dovus_restart_ready", restart_ready)
         web_platform.window.eval(
             "globalThis.dovus_state = %r; globalThis.dovus_player_dead = %s; globalThis.dovus_game_over = %s; "
             "globalThis.dovus_p1_won = %s; globalThis.dovus_match_id = %d; "
-            "globalThis.dovus_p1_dead = %s; globalThis.dovus_p2_dead = %s"
+            "globalThis.dovus_p1_dead = %s; globalThis.dovus_p2_dead = %s; globalThis.dovus_restart_ready = %s"
             % (
                 game.state,
                 "true" if player_dead else "false",
@@ -237,6 +249,7 @@ def publish_web_state(game):
                 match_id,
                 "true" if p1_dead else "false",
                 "true" if p2_dead else "false",
+                "true" if restart_ready else "false",
             )
         )
     except Exception:
@@ -741,6 +754,12 @@ class AIController:
                 else: action = random.choice(['punch', 'kick', 'special', 'block']); keys[self.controls[action]] = True
         return keys
 
+
+class EmptyKeys:
+    def __getitem__(self, key):
+        return False
+
+
 # --- GameManager ---
 class GameManager:
     def __init__(self):
@@ -752,6 +771,16 @@ class GameManager:
         
         self.ctrl_p1 = {'up': pygame.K_w, 'left': pygame.K_a, 'right': pygame.K_d, 'punch': pygame.K_j, 'kick': pygame.K_k, 'special': pygame.K_l, 'block': pygame.K_u}
         self.ctrl_p2 = {'up': pygame.K_UP, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'punch': pygame.K_KP1, 'kick': pygame.K_KP2, 'special': pygame.K_KP3, 'block': pygame.K_KP0}
+
+    def update_finish_animations(self):
+        no_keys = EmptyKeys()
+        for fighter in (getattr(self, "p1", None), getattr(self, "p2", None)):
+            if fighter and (fighter.is_ko or fighter.health <= 0):
+                if not isinstance(fighter.state, KOState):
+                    fighter.is_ko = True
+                    fighter.change_state(KOState())
+                fighter.update(no_keys)
+        self.camera.update()
 
     def start_fight(self, vs_ai):
         self.touch_ui.clear()
@@ -777,10 +806,13 @@ class GameManager:
         self.particles.particles.clear()
 
     def update(self):
-        if self.state in ("MENU", "GAME_OVER"):
+        if self.state == "MENU":
+            return
+        if self.state == "GAME_OVER":
+            self.update_finish_animations()
             return
         if self.state == "ROUND_END":
-            self.camera.update()
+            self.update_finish_animations()
             return
         
         real_keys = pygame.key.get_pressed()
@@ -829,7 +861,10 @@ class GameManager:
                     defender.change_state(HitStunState())
                     self.particles.emit_hit(defender.pos[0], defender.pos[1]-60); self.camera.shake()
                     self.particles.emit_text(defender.pos[0], defender.pos[1]-145, f"-{int(damage)}", (255, 230, 80))
-                if defender.health <= 0 and self.state == "FIGHT": self.handle_round_end(False, attacker)
+                if defender.health <= 0 and self.state == "FIGHT":
+                    defender.is_ko = True
+                    defender.change_state(KOState())
+                    self.handle_round_end(False, attacker)
 
     def handle_round_end(self, timeout, winner=None):
         self.state = "ROUND_END"; self.timer_end = pygame.time.get_ticks()
@@ -941,6 +976,9 @@ async def main():
 
         if web_restart_requested():
             game.start_fight(True)
+
+        if web_home_requested():
+            game._GameManager__restart()
 
         game.update()
         publish_web_state(game)
