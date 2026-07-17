@@ -20,7 +20,7 @@ SPRITE_SCALE = 1.62
 PUNCH_DAMAGE = 8
 KICK_DAMAGE = 12
 SPECIAL_DAMAGE = 20
-BLOCK_REDUCTION = 0.0
+BLOCK_REDUCTION = 0.3
 SPECIAL_RECHARGE_RATE = 0.08
 MAX_HEALTH = 100
 ROUND_TIME = 99
@@ -311,14 +311,10 @@ def publish_web_state(game):
         pass
 
 
-def game_viewport(window_size=None):
-    return pygame.Rect(0, 0, WIDTH, HEIGHT)
-
-
 def screen_to_game(pos):
-    viewport = game_viewport()
-    x = (pos[0] - viewport.x) * WIDTH / viewport.width
-    y = (pos[1] - viewport.y) * HEIGHT / viewport.height
+    win_w, win_h = screen.get_size()
+    x = pos[0] * WIDTH / win_w
+    y = pos[1] * HEIGHT / win_h
     return max(0, min(WIDTH - 1, int(x))), max(0, min(HEIGHT - 1, int(y)))
 
 
@@ -330,95 +326,14 @@ def finger_to_game(event):
 def present_game():
     screen.blit(game_surface, (0, 0))
 
-# --- Sanal Dokunmatik Kontroller (Touch UI) ---
 class TouchButton:
-    def __init__(self, rect, key, text, color, text_color=(255,255,255)):
+    def __init__(self, rect, key, text, color, text_color=(255, 255, 255)):
         self.rect = pygame.Rect(rect)
         self.key = key
         self.text = text
         self.base_color = color
         self.text_color = text_color
         self.is_pressed = False
-
-class TouchController:
-    PAD = 18       # kenar boşluğu
-    BTN = 80       # D-pad buton boyutu
-    ABTN = 90      # aksiyon buton boyutu
-
-    def __init__(self):
-        P = self.PAD; B = self.BTN; A = self.ABTN
-        BY = HEIGHT - P - B          # en alttaki buton Y
-        LX = P                       # sol başlangıç X
-
-        # --- SOL D-PAD ---
-        self.buttons = [
-            # Sol
-            TouchButton((LX,              BY, B, B), pygame.K_a, "<", (60, 60, 60)),
-            # Sağ
-            TouchButton((LX + B + P,      BY, B, B), pygame.K_d, ">", (60, 60, 60)),
-            # Zıpla (ortada üstte)
-            TouchButton((LX + (B+P)//2,   BY - B - P, B, B), pygame.K_w, "^", (60, 80, 60)),
-
-            # --- SAĞ AKSİYON BUTONLARI ---
-            # Yumruk - sol
-            TouchButton((WIDTH - P - A*2 - P,  BY,      A, A), pygame.K_j, "YUM", (200, 60, 60)),
-            # Tekme - sağ
-            TouchButton((WIDTH - P - A,         BY,      A, A), pygame.K_k, "TEK", (60, 180, 60)),
-            # Özel - üst orta
-            TouchButton((WIDTH - P - A - A//2 - P//2, BY - A - P, A, A), pygame.K_l, "OZEL", (60, 60, 200)),
-            # Blok - üst sağ
-            TouchButton((WIDTH - P - A,          BY - A - P, A, A), pygame.K_u, "BLOK", (120, 80, 20)),
-        ]
-        self.active_touches = {}
-        self.virtual_keys = {b.key: False for b in self.buttons}
-
-    def _hit_test(self, x, y):
-        for b in self.buttons:
-            if b.rect.collidepoint(x, y):
-                return b
-        return None
-
-    def process_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            b = self._hit_test(*event.pos)
-            if b:
-                b.is_pressed = True
-                self.virtual_keys[b.key] = True
-                self.active_touches['mouse'] = b
-        elif event.type == pygame.MOUSEBUTTONUP:
-            b = self.active_touches.pop('mouse', None)
-            if b:
-                b.is_pressed = False
-                self.virtual_keys[b.key] = False
-        elif event.type == pygame.FINGERDOWN:
-            x, y = event.x * WIDTH, event.y * HEIGHT
-            b = self._hit_test(x, y)
-            if b:
-                b.is_pressed = True
-                self.virtual_keys[b.key] = True
-                self.active_touches[event.finger_id] = b
-        elif event.type == pygame.FINGERUP:
-            b = self.active_touches.pop(event.finger_id, None)
-            if b:
-                b.is_pressed = False
-                self.virtual_keys[b.key] = False
-
-    def draw(self, surface):
-        for b in self.buttons:
-            # Yarı saydam arka yüzey
-            s = pygame.Surface((b.rect.width, b.rect.height), pygame.SRCALPHA)
-            alpha = 230 if b.is_pressed else 160
-            col = (min(255, b.base_color[0]+80), min(255, b.base_color[1]+80), min(255, b.base_color[2]+80)) if b.is_pressed else b.base_color
-            pygame.draw.rect(s, (*col, alpha), (0, 0, b.rect.width, b.rect.height), border_radius=20)
-            # Kenarlık
-            border_col = (255, 255, 0) if b.is_pressed else (180, 180, 180)
-            pygame.draw.rect(s, (*border_col, 255), (0, 0, b.rect.width, b.rect.height), 3, border_radius=20)
-            surface.blit(s, b.rect.topleft)
-            # Yazı
-            lbl = font_small.render(b.text, True, b.text_color)
-            surface.blit(lbl, (b.rect.centerx - lbl.get_width()//2, b.rect.centery - lbl.get_height()//2))
-
-
 
 class MobileTouchController:
     PAD = 22
@@ -493,7 +408,7 @@ class MobileTouchController:
             self._set_touch("mouse", None)
         elif event.type == pygame.FINGERDOWN:
             game_pos = finger_to_game(event)
-            self._set_touch(event.finger_id, self._hit_test(*game_pos) if game_pos else None)
+            self._set_touch(event.finger_id, self._hit_test(*game_pos))
         elif event.type == pygame.FINGERMOTION:
             game_pos = finger_to_game(event)
             self._set_touch(event.finger_id, self._hit_test(*game_pos) if game_pos else None)
@@ -527,6 +442,15 @@ class CombinedKeys:
         self.virtual_keys = virtual_keys
     def __getitem__(self, key):
         return self.real_keys[key] or self.virtual_keys.get(key, False) or web_key_pressed(key)
+
+
+class _DictKeys:
+    """Dict tabanlı key durumu okuyucu — AI input için kullanılır."""
+    def __init__(self, d):
+        self.d = d
+    def __getitem__(self, k):
+        return self.d.get(k, False)
+
 
 
 # --- Sprite Loader ---
@@ -871,7 +795,7 @@ class GameManager:
     def reset_round(self):
         self.touch_ui.clear()
         self.p1.health = self.p2.health = MAX_HEALTH
-        self.p1.special_meter = self.p2.special_meter = 100
+        self.p1.special_meter = self.p2.special_meter = 0
         self.p1.pos, self.p2.pos = [250, GROUND_Y], [774, GROUND_Y]
         self.p1.change_state(IdleState()); self.p2.change_state(IdleState())
         self.p1.is_ko = self.p2.is_ko = False
@@ -895,13 +819,11 @@ class GameManager:
         
         if self.ai_mode:
             ai_keys = self.ai.generate_input(self.p2, self.p1)
-            class FakeKeys:
-                def __init__(self, d): self.d = d
-                def __getitem__(self, k): return self.d.get(k, False)
             comb = {k: real_keys[k] for k in range(512)}
             comb.update(ai_keys)
-            self.p2.state.handle_input(self.p2, FakeKeys(comb))
-            self.p2.update(FakeKeys(comb))
+            p2_keys = _DictKeys(comb)
+            self.p2.state.handle_input(self.p2, p2_keys)
+            self.p2.update(p2_keys)
         else:
             self.p2.state.handle_input(self.p2, real_keys)
             self.p2.update(real_keys)
@@ -942,11 +864,14 @@ class GameManager:
     def handle_round_end(self, timeout, winner=None):
         self.state = "ROUND_END"; self.timer_end = pygame.time.get_ticks()
         self.touch_ui.clear()
+        self.is_draw = False
         if timeout:
             if self.p1.health > self.p2.health:
                 winner = self.p1
             elif self.p2.health > self.p1.health:
                 winner = self.p2
+            else:
+                self.is_draw = True
         if winner:
             winner.rounds_won += 1
             if winner.rounds_won >= ROUNDS_TO_WIN: self.state = "GAME_OVER"
@@ -1005,20 +930,25 @@ class GameManager:
         surface.blit(t_surf, (WIDTH//2 - t_surf.get_width()//2, 20))
 
         if self.state == "ROUND_END":
-            txt = font_large.render("K.O." if self.p1.is_ko or self.p2.is_ko else "TIME UP", True, (255,50,50))
-            surface.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2))
+            if getattr(self, "is_draw", False):
+                txt = font_large.render("BERABERE!", True, (200, 200, 80))
+            elif self.p1.is_ko or self.p2.is_ko:
+                txt = font_large.render("K.O.", True, (255, 50, 50))
+            else:
+                txt = font_large.render("TIME UP", True, (255, 50, 50))
+            surface.blit(txt, (WIDTH // 2 - txt.get_width() // 2, HEIGHT // 2))
         elif self.state == "GAME_OVER":
             winner = self.p1.name if self.p1.rounds_won >= ROUNDS_TO_WIN else self.p2.name
             txt = font_large.render(f"{winner} KAZANDI!", True, HIGHLIGHT)
-            surface.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2 - 120))
-
+            surface.blit(txt, (WIDTH // 2 - txt.get_width() // 2, HEIGHT // 2 - 120))
             hint = font_small.render("Yeni mac icin TEKRAR BASLAT butonuna bas.", True, (180, 180, 180))
-            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 70))
+            surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, HEIGHT // 2 + 70))
             return
 
-    def __restart(self):
+    def restart(self):
         self.touch_ui.clear()
         self.state = "MENU"
+        self.is_draw = False
 
 
 # --- Asenkron Ana Döngü (Pygbag Uyumlu) ---
@@ -1050,7 +980,7 @@ async def main():
             game.start_fight(True)
 
         if web_home_requested():
-            game._GameManager__restart()
+            game.restart()
 
         game.update()
         publish_web_state(game)
