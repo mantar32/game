@@ -804,6 +804,22 @@ class Fighter:
             if self.facing == -1: img = pygame.transform.flip(img, True, False)
             img_rect = img.get_rect(midbottom=(cx, cy + 12))
             surface.blit(img, img_rect)
+        if isinstance(self.state, KickState) and 5 <= self.state.anim_timer <= 23:
+            foot_x = cx + self.facing * 86
+            knee_x = cx + self.facing * 34
+            hip_y = cy - 74
+            foot_y = cy - 48
+            trail_x = cx + self.facing * 112
+            pygame.draw.line(surface, (255, 230, 90), (knee_x, hip_y), (foot_x, foot_y), 12)
+            pygame.draw.circle(surface, (255, 245, 170), (foot_x, foot_y), 13)
+            pygame.draw.arc(
+                surface,
+                (255, 120, 60),
+                pygame.Rect(min(foot_x, trail_x) - 10, foot_y - 34, 58, 58),
+                -0.9 if self.facing == 1 else 2.2,
+                0.9 if self.facing == 1 else 4.0,
+                5,
+            )
 
 # --- AI Controller ---
 class AIController:
