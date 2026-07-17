@@ -959,7 +959,11 @@ setInterval(updateRestartButton, 120);
         }
 
         #start-button {
-            top: 38%;
+            top: auto;
+            bottom: 6%;
+            font-size: 24px;
+            min-height: 64px;
+            min-width: 280px;
         }
 
         #restart-button {
@@ -980,7 +984,7 @@ setInterval(updateRestartButton, 120);
         #character-select {
             position: fixed;
             left: 50%;
-            top: 52%;
+            top: 55%;
             transform: translateX(-50%);
             z-index: 201;
             display: flex;
@@ -1002,14 +1006,14 @@ setInterval(updateRestartButton, 120);
         #game-settings-panel {
             position: fixed;
             left: 50%;
-            top: 45%;
+            top: 31%;
             transform: translateX(-50%);
             z-index: 202;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            padding: 14px 22px;
+            gap: 12px;
+            padding: 18px 24px;
             border-radius: 16px;
             background: rgba(8, 16, 28, 0.88);
             border: 1px solid rgba(255, 215, 0, 0.25);
@@ -1102,6 +1106,56 @@ setInterval(updateRestartButton, 120);
         .toggle-btn[data-diff="Zor"].is-active {
             background: linear-gradient(135deg, rgba(244, 67, 54, 0.55), rgba(244, 67, 54, 0.25));
             border-color: rgba(244, 67, 54, 0.7);
+        }
+
+        #wallet-panel {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 205;
+            background: rgba(15, 25, 42, 0.88);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: #ffd700;
+            font: 700 14px/1.4 Arial, sans-serif;
+            text-align: right;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        #coin-count {
+            font-size: 18px;
+            color: #fff;
+        }
+
+        #wallet-message {
+            display: block;
+            font-size: 11px;
+            color: #4caf50;
+            margin-top: 4px;
+        }
+
+        #stats-text {
+            color: rgba(255,255,255,0.6);
+            font-size: 10px;
+        }
+        
+        #btn-achievements {
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-top: 6px;
+            transition: 0.2s;
+        }
+
+        #btn-achievements:hover {
+            background: rgba(255, 215, 0, 0.3);
+            color: #fff;
         }
 
         #achievements-modal {
@@ -1305,15 +1359,20 @@ setInterval(updateRestartButton, 120);
 
         @media (orientation: landscape) and (min-width: 700px) {
             #start-button {
-                top: 38%;
+                bottom: 8%;
             }
 
             #wallet-panel {
-                top: 46%;
+                top: 15px;
+                right: 15px;
+            }
+
+            #game-settings-panel {
+                top: 31%;
             }
 
             #character-select {
-                top: 54%;
+                top: 55%;
                 width: min(870px, calc(100vw - 32px));
             }
         }
