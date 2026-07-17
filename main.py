@@ -311,6 +311,124 @@ def publish_web_state(game):
         pass
 
 
+# --- Network Helpers ---
+def web_get_network_mode():
+    if web_platform is None:
+        return "OFFLINE"
+    try:
+        net = getattr(web_platform.window, "dovus_network", None)
+        if net:
+            return str(getattr(net, "mode", "OFFLINE"))
+    except Exception:
+        pass
+    try:
+        return str(web_platform.window.eval("globalThis.dovus_network ? globalThis.dovus_network.mode : 'OFFLINE'"))
+    except Exception:
+        return "OFFLINE"
+
+
+def web_get_network_username():
+    if web_platform is None:
+        return "Oyuncu"
+    try:
+        net = getattr(web_platform.window, "dovus_network", None)
+        if net:
+            return str(getattr(net, "username", "Oyuncu"))
+    except Exception:
+        pass
+    return "Oyuncu"
+
+
+def web_get_remote_username():
+    if web_platform is None:
+        return "Rakip"
+    try:
+        net = getattr(web_platform.window, "dovus_network", None)
+        if net:
+            return str(getattr(net, "remoteUsername", "Rakip"))
+    except Exception:
+        pass
+    return "Rakip"
+
+
+def web_get_remote_keys():
+    """Client'in bastigi tuslari Host tarafinda oku"""
+    if web_platform is None:
+        return []
+    try:
+        net = getattr(web_platform.window, "dovus_network", None)
+        if net:
+            keys = getattr(net, "remoteKeys", None)
+            if keys:
+                return list(keys)
+    except Exception:
+        pass
+    return []
+
+
+def web_get_incoming_state():
+    """Host'tan Client'a gelen oyun durumunu oku"""
+    if web_platform is None:
+        return None
+    try:
+        net = getattr(web_platform.window, "dovus_network", None)
+        if net:
+            state = getattr(net, "inState", None)
+            if state:
+                result = {
+                    "p1x": float(getattr(state, "p1x", 0)),
+                    "p1y": float(getattr(state, "p1y", 0)),
+                    "p2x": float(getattr(state, "p2x", 0)),
+                    "p2y": float(getattr(state, "p2y", 0)),
+                    "p1h": float(getattr(state, "p1h", 100)),
+                    "p2h": float(getattr(state, "p2h", 100)),
+                    "p1s": float(getattr(state, "p1s", 0)),
+                    "p2s": float(getattr(state, "p2s", 0)),
+                    "p1f": int(getattr(state, "p1f", 1)),
+                    "p2f": int(getattr(state, "p2f", -1)),
+                    "p1a": str(getattr(state, "p1a", "Idle")),
+                    "p2a": str(getattr(state, "p2a", "Idle")),
+                    "p1ko": bool(getattr(state, "p1ko", False)),
+                    "p2ko": bool(getattr(state, "p2ko", False)),
+                    "timer": int(getattr(state, "timer", 99)),
+                    "gstate": str(getattr(state, "gstate", "FIGHT")),
+                    "flash": int(getattr(state, "flash", 0)),
+                }
+                return result
+    except Exception:
+        pass
+    return None
+
+
+def web_publish_game_state(game):
+    """Host olarak oyun durumunu JS tarafina yaz"""
+    if web_platform is None:
+        return
+    try:
+        state_js = (
+            "{p1x:%.1f,p1y:%.1f,p2x:%.1f,p2y:%.1f,"
+            "p1h:%.1f,p2h:%.1f,p1s:%.1f,p2s:%.1f,"
+            "p1f:%d,p2f:%d,"
+            "p1a:'%s',p2a:'%s',"
+            "p1ko:%s,p2ko:%s,"
+            "timer:%d,gstate:'%s',flash:%d}"
+        ) % (
+            game.p1.pos[0], game.p1.pos[1],
+            game.p2.pos[0], game.p2.pos[1],
+            game.p1.health, game.p2.health,
+            game.p1.special_meter, game.p2.special_meter,
+            game.p1.facing, game.p2.facing,
+            game.p1.current_anim, game.p2.current_anim,
+            "true" if game.p1.is_ko else "false",
+            "true" if game.p2.is_ko else "false",
+            game.timer, game.state,
+            getattr(game, "flash_alpha", 0),
+        )
+        web_platform.window.eval(f"globalThis.dovus_network.outState = {state_js}")
+    except Exception:
+        pass
+
+
 def screen_to_game(pos):
     win_w, win_h = screen.get_size()
     x = pos[0] * WIDTH / win_w
@@ -699,8 +817,11 @@ class HitStunState(State):
 
 class KOState(State):
     def enter(self, fighter):
-        fighter.set_anim("KO", loop=False); fighter.vel[0] = 0; fighter.hitbox = None
-    def update(self, fighter, keys): pass
+        fighter.set_anim("KO", loop=False); fighter.vel[1] = -11; fighter.vel[0] = -fighter.facing * 8; fighter.hitbox = None
+    def update(self, fighter, keys):
+        if fighter.pos[1] >= GROUND_Y:
+            fighter.vel[0] *= 0.75
+            if abs(fighter.vel[0]) < 0.5: fighter.vel[0] = 0
 
 # --- Fighter ---
 class Fighter:
@@ -870,7 +991,15 @@ class GameManager:
             
         self.p1 = Fighter("P1", p1_character, P1_COLOR, 300, 1, self.ctrl_p1)
         self.p2 = Fighter("P2", p2_character, P2_COLOR, 700, -1, self.ctrl_p2)
-        if vs_ai:
+        
+        # Network mode: override names and AI
+        self.network_mode = web_get_network_mode()
+        if self.network_mode in ("HOST", "CLIENT"):
+            self.ai_mode = False
+            self.ai = None
+            self.p1.name = web_get_network_username()
+            self.p2.name = web_get_remote_username()
+        elif vs_ai:
             if self.game_mode == "Arcade":
                 self.p2.name = f"{self.p2.name} (Bölüm {self.arcade_level})"
             elif self.game_mode == "Antrenman":
@@ -910,12 +1039,64 @@ class GameManager:
             self.update_finish_animations()
             return
         
+        net_mode = getattr(self, "network_mode", "OFFLINE")
+        
+        # --- CLIENT MODE: Fiziksiz, sadece Host'tan gelen veriyi goster ---
+        if net_mode == "CLIENT":
+            incoming = web_get_incoming_state()
+            if incoming:
+                self.p1.pos[0] = incoming["p1x"]
+                self.p1.pos[1] = incoming["p1y"]
+                self.p2.pos[0] = incoming["p2x"]
+                self.p2.pos[1] = incoming["p2y"]
+                self.p1.health = incoming["p1h"]
+                self.p2.health = incoming["p2h"]
+                self.p1.special_meter = incoming["p1s"]
+                self.p2.special_meter = incoming["p2s"]
+                self.p1.facing = incoming["p1f"]
+                self.p2.facing = incoming["p2f"]
+                self.p1.set_anim(incoming["p1a"])
+                self.p2.set_anim(incoming["p2a"])
+                self.p1.is_ko = incoming["p1ko"]
+                self.p2.is_ko = incoming["p2ko"]
+                self.timer = incoming["timer"]
+                self.flash_alpha = incoming["flash"]
+                if incoming["gstate"] in ("ROUND_END", "GAME_OVER"):
+                    self.state = incoming["gstate"]
+                    self.timer_end = pygame.time.get_ticks()
+                self.p1.hurtbox.midbottom = (self.p1.pos[0], self.p1.pos[1])
+                self.p2.hurtbox.midbottom = (self.p2.pos[0], self.p2.pos[1])
+                # Animate frames
+                for f in (self.p1, self.p2):
+                    if len(f.frames) > 0:
+                        f.frame_index += f.anim_speed
+                        if f.frame_index >= len(f.frames):
+                            if f.loop_anim: f.frame_index = 0
+                            else: f.frame_index = len(f.frames) - 1
+            self.camera.update()
+            return
+        
+        # --- HOST or OFFLINE MODE: Normal fizik ---
         real_keys = pygame.key.get_pressed()
         combined_keys = CombinedKeys(real_keys, self.touch_ui.virtual_keys)
         
         self.p1.state.handle_input(self.p1, combined_keys)
         
-        if self.ai_mode:
+        if net_mode == "HOST":
+            # Host modunda P2'yi uzaktan gelen tuslarla kontrol et
+            remote_keys = web_get_remote_keys()
+            KEY_MAP = {"a": pygame.K_a, "d": pygame.K_d, "w": pygame.K_w, "j": pygame.K_j, "k": pygame.K_k, "l": pygame.K_l, "u": pygame.K_u}
+            remote_dict = {v: False for v in self.ctrl_p2.values()}
+            for k_name in remote_keys:
+                # Remote keys come as P1 key names, remap to P2 controls
+                p1_to_action = {"a": "left", "d": "right", "w": "up", "j": "punch", "k": "kick", "l": "special", "u": "block"}
+                action = p1_to_action.get(str(k_name))
+                if action and action in self.ctrl_p2:
+                    remote_dict[self.ctrl_p2[action]] = True
+            p2_keys = _DictKeys(remote_dict)
+            self.p2.state.handle_input(self.p2, p2_keys)
+            self.p2.update(p2_keys)
+        elif self.ai_mode:
             ai_keys = self.ai.generate_input(self.p2, self.p1)
             comb = {k: real_keys[k] for k in range(len(real_keys))}
             comb.update(ai_keys)
@@ -1164,6 +1345,11 @@ async def main():
 
         game.update()
         publish_web_state(game)
+        
+        # Network sync: Host yayini
+        if getattr(game, "network_mode", "OFFLINE") == "HOST" and game.state != "MENU":
+            web_publish_game_state(game)
+        
         game.draw(game_surface)
         present_game()
         pygame.display.flip()

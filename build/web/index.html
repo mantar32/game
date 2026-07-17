@@ -742,11 +742,116 @@ function setupTouchKeyboard() {
     updateRestartButton();
 }
 
+globalThis.dovus_network = {
+    mode: "OFFLINE",
+    peer: null,
+    conn: null,
+    roomId: "",
+    username: "Oyuncu",
+    remoteUsername: "Rakip",
+    inState: null,
+    outState: null,
+    remoteKeys: []
+};
+
+function initMultiplayer() {
+    const statusDiv = document.getElementById("multiplayer-status");
+    const btnCreate = document.getElementById("btn-create-room");
+    const btnJoin = document.getElementById("btn-join-room");
+    const inputRoom = document.getElementById("room-id-input");
+    const inputUser = document.getElementById("username-input");
+    
+    if (!statusDiv) return;
+
+    inputUser.value = localStorage.getItem("dovus_username") || "Oyuncu_" + Math.floor(Math.random()*1000);
+    globalThis.dovus_network.username = inputUser.value;
+
+    inputUser.addEventListener("change", () => {
+        localStorage.setItem("dovus_username", inputUser.value);
+        globalThis.dovus_network.username = inputUser.value;
+    });
+
+    const setupConnection = (conn) => {
+        globalThis.dovus_network.conn = conn;
+        conn.on("open", () => {
+            statusDiv.textContent = "Bağlandı! Bekleniyor...";
+            statusDiv.style.color = "#0f0";
+            conn.send({ type: "hello", username: globalThis.dovus_network.username, character: globalThis.dovus_character });
+        });
+        conn.on("data", (data) => {
+            if (data.type === "hello") {
+                globalThis.dovus_network.remoteUsername = data.username;
+                statusDiv.textContent = `Rakip: ${data.username} (Hazır!)`;
+                // Host starts the game and tells client to start
+                if (globalThis.dovus_network.mode === "HOST") {
+                    startFightFromButton();
+                    conn.send({ type: "start_fight" });
+                }
+            } else if (data.type === "start_fight") {
+                startFightFromButton();
+            } else if (data.type === "state") {
+                globalThis.dovus_network.inState = data.state;
+            } else if (data.type === "keys") {
+                globalThis.dovus_network.remoteKeys = data.keys;
+            }
+        });
+        conn.on("close", () => {
+            statusDiv.textContent = "Bağlantı koptu.";
+            statusDiv.style.color = "#f00";
+            globalThis.dovus_network.mode = "OFFLINE";
+        });
+    };
+
+    btnCreate.addEventListener("click", () => {
+        statusDiv.textContent = "Oda kuruluyor...";
+        statusDiv.style.color = "#ffaa00";
+        const peer = new Peer();
+        globalThis.dovus_network.peer = peer;
+        peer.on("open", (id) => {
+            globalThis.dovus_network.roomId = id;
+            inputRoom.value = id;
+            statusDiv.textContent = "Oda Kuruldu. Rakip bekleniyor...";
+            globalThis.dovus_network.mode = "HOST";
+        });
+        peer.on("connection", (conn) => {
+            setupConnection(conn);
+        });
+    });
+
+    btnJoin.addEventListener("click", () => {
+        const id = inputRoom.value.trim();
+        if (!id) return;
+        statusDiv.textContent = "Odaya bağlanılıyor...";
+        statusDiv.style.color = "#ffaa00";
+        const peer = new Peer();
+        globalThis.dovus_network.peer = peer;
+        peer.on("open", () => {
+            globalThis.dovus_network.mode = "CLIENT";
+            const conn = peer.connect(id);
+            setupConnection(conn);
+        });
+    });
+
+    setInterval(() => {
+        const conn = globalThis.dovus_network.conn;
+        if (!conn || !conn.open) return;
+        if (globalThis.dovus_network.mode === "HOST" && globalThis.dovus_network.outState) {
+            conn.send({ type: "state", state: globalThis.dovus_network.outState });
+        } else if (globalThis.dovus_network.mode === "CLIENT") {
+            const activeKeys = Object.keys(globalThis.dovus_keys).filter(k => globalThis.dovus_keys[k]);
+            conn.send({ type: "keys", keys: activeKeys });
+        }
+    }, 16); // ~60fps
+}
+
 window.addEventListener("blur", releaseAllTouchKeys);
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) releaseAllTouchKeys();
 });
-window.addEventListener("DOMContentLoaded", setupTouchKeyboard);
+window.addEventListener("DOMContentLoaded", () => {
+    setupTouchKeyboard();
+    initMultiplayer();
+});
 setInterval(updateRestartButton, 120);
 
 </script>
@@ -1486,7 +1591,7 @@ setInterval(updateRestartButton, 120);
            border: 1px solid black;
         }
     </style>
-
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 </head>
 
 <body>
@@ -1546,6 +1651,20 @@ height="600px"
                     <button class="toggle-btn" data-diff="Zor" type="button">😈 Zor<span class="toggle-sub">Blok %70</span></button>
                 </div>
             </div>
+        </div>
+        <div id="multiplayer-panel" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 15px; background: rgba(20, 25, 35, 0.9); border: 2px solid rgba(100, 200, 255, 0.4); border-radius: 12px; box-shadow: 0 14px 36px rgba(0,0,0,0.28); margin-bottom: 10px; width: 100%; max-width: 400px; box-sizing: border-box;">
+            <div style="font-weight: bold; color: #fff; font-size: 14px; margin-bottom: 5px;">🌐 ONLINE OYNA</div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <input type="text" id="username-input" placeholder="Kullanıcı Adı" maxlength="12" style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(100,200,255,0.4); color: white; padding: 6px; border-radius: 6px; outline: none; font-size: 12px; text-align: center;" />
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button type="button" id="btn-create-room" style="flex: 1; background: rgba(33, 178, 83, 0.6); border: 1px solid rgba(33, 178, 83, 0.8); color: white; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">Oda Kur</button>
+            </div>
+            <div style="display: flex; gap: 5px; width: 100%;">
+                <input type="text" id="room-id-input" placeholder="Oda Kodu" style="flex: 2; background: rgba(0,0,0,0.5); border: 1px solid rgba(100,200,255,0.4); color: white; padding: 6px; border-radius: 6px; outline: none; font-size: 12px; text-align: center;" />
+                <button type="button" id="btn-join-room" style="flex: 1; background: rgba(100, 200, 255, 0.2); border: 1px solid rgba(100, 200, 255, 0.4); color: white; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">Katıl</button>
+            </div>
+            <div id="multiplayer-status" style="font-size: 11px; color: #aaa; margin-top: 5px; text-align: center; min-height: 14px;">Çevrimdışı</div>
         </div>
         <div id="character-select" aria-label="Karakter secimi">
             <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><img class="character-portrait" src="./character-previews/Fighter.png" alt=""><span class="character-name">FIGHTER</span><small>DENGELI</small></button>
