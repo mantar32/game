@@ -518,8 +518,42 @@ class SpriteManager:
         self.load_character(character_id)
         return self.sprites[character_id][anim_name]
 
+class SoundManager:
+    def __init__(self, base_path):
+        self.sounds = {}
+        self.base_path = base_path
+        self.enabled = True
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+        except:
+            self.enabled = False
+
+    def load(self, name, filename):
+        if not self.enabled: return
+        path = os.path.join(self.base_path, "sounds", filename)
+        if os.path.exists(path):
+            try:
+                self.sounds[name] = pygame.mixer.Sound(path)
+            except:
+                pass
+                
+    def play(self, name):
+        if self.enabled and name in self.sounds:
+            try:
+                self.sounds[name].play()
+            except:
+                pass
+
 assets_path = os.path.join(BASE_DIR, "assets")
 assets = SpriteManager(assets_path)
+sounds = SoundManager(assets_path)
+sounds.load("punch", "punch.ogg")
+sounds.load("kick", "kick.ogg")
+sounds.load("special", "special.ogg")
+sounds.load("block", "block.ogg")
+sounds.load("ko", "ko.ogg")
+sounds.load("hit", "hit.ogg")
 
 
 # --- Camera & Particles ---
@@ -626,6 +660,7 @@ class AttackState(State):
     def enter(self, fighter):
         fighter.set_anim(self.anim_name, loop=False)
         fighter.anim_timer = 0; fighter.vel[0] = 0; fighter.hit_connected = False
+        sounds.play(self.anim_name.lower())
     def update(self, fighter, keys):
         fighter.anim_timer += 1
         fighter.vel[0] = fighter.facing * self.move_speed
@@ -677,11 +712,19 @@ class Fighter:
         self.pos = [x, GROUND_Y]; self.vel = [0, 0]; self.facing = facing
         self.anim_timer = 0
         self.health = MAX_HEALTH; self.special_meter = 0
+        self.combo_count = 0; self.combo_timer = 0
         self.controls = controls
         self.hurtbox = pygame.Rect(0, 0, 50, 100); self.hitbox = None
         self.hit_connected = False; self.current_damage = 0
         self.is_ko = False; self.rounds_won = 0
         self.current_anim = "Idle"
+        
+        # Passive abilities
+        self.lifesteal = 0.05 if "Vampire" in self.character_id else 0.0
+        self.crit_chance = 0.15 if self.character_id == "Samurai" else 0.0
+        self.dodge_chance = 0.10 if self.character_id == "Shinobi" else 0.0
+        self.reflect_damage = 0.15 if "Satyr" in self.character_id else 0.0
+        
         self.frames = assets.get_frames(self.character_id, self.current_anim)
         self.frame_index = 0; self.anim_speed = 0.2; self.loop_anim = True
         self.state = IdleState(); self.state.enter(self)
@@ -706,7 +749,8 @@ class Fighter:
     def take_damage(self, amount):
         self.health -= amount
         if self.health < 0: self.health = 0
-        self.special_meter = min(100, self.special_meter + amount * 1.5)
+        mult = 2.0 if self.character_id == "Gotoku" else 1.5
+        self.special_meter = min(100, self.special_meter + amount * mult)
 
     def update(self, keys):
         self.state.update(self, keys)
@@ -720,6 +764,10 @@ class Fighter:
             if self.frame_index >= len(self.frames):
                 if self.loop_anim: self.frame_index = 0
                 else: self.frame_index = len(self.frames) - 1
+        
+        if self.combo_timer > 0:
+            self.combo_timer -= 1
+            if self.combo_timer <= 0: self.combo_count = 0
 
     def draw(self, surface, cam):
         cx, cy = int(self.pos[0] + cam[0]), int(self.pos[1] + cam[1])
@@ -732,15 +780,24 @@ class Fighter:
 
 # --- AI Controller ---
 class AIController:
-    def __init__(self, controls): self.controls = controls; self.cooldown = 0
+    def __init__(self, controls, difficulty="Normal"): 
+        self.controls = controls; self.cooldown = 0
+        self.difficulty = difficulty
+        
     def generate_input(self, ai_f, p_f):
         keys = {k: False for k in self.controls.values()}
+        if self.difficulty == "Antrenman": return keys
+        
         if ai_f.is_ko or p_f.is_ko: return keys
         self.cooldown -= 1
         dist = abs(ai_f.pos[0] - p_f.pos[0])
         ai_f.facing = 1 if p_f.pos[0] > ai_f.pos[0] else -1
+        
         if self.cooldown <= 0:
-            self.cooldown = random.randint(10, 30)
+            if self.difficulty == "Kolay": self.cooldown = random.randint(30, 50); block_chance = 0.2
+            elif self.difficulty == "Zor": self.cooldown = random.randint(5, 15); block_chance = 0.7
+            else: self.cooldown = random.randint(15, 30); block_chance = 0.45
+            
             if dist > 150: keys[self.controls['right'] if ai_f.facing == 1 else self.controls['left']] = True
             elif dist > 70:
                 action = random.choice(['walk', 'kick', 'jump'])
@@ -748,7 +805,7 @@ class AIController:
                 elif action == 'kick': keys[self.controls['kick']] = True
                 elif action == 'jump': keys[self.controls['up']] = True
             else:
-                if p_f.hitbox and random.random() < 0.6: keys[self.controls['block']] = True; self.cooldown = 20
+                if p_f.hitbox and random.random() < block_chance: keys[self.controls['block']] = True; self.cooldown = 15
                 else: action = random.choice(['punch', 'kick', 'special', 'block']); keys[self.controls[action]] = True
         return keys
 
@@ -766,6 +823,8 @@ class GameManager:
         self.timer = ROUND_TIME; self.last_tick = 0
         self.match_id = 0
         self.touch_ui = MobileTouchController()
+        self.slow_mo_frames = 0
+        self.flash_alpha = 0
         
         self.ctrl_p1 = {'up': pygame.K_w, 'left': pygame.K_a, 'right': pygame.K_d, 'punch': pygame.K_j, 'kick': pygame.K_k, 'special': pygame.K_l, 'block': pygame.K_u}
         self.ctrl_p2 = {'up': pygame.K_UP, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'punch': pygame.K_KP1, 'kick': pygame.K_KP2, 'special': pygame.K_KP3, 'block': pygame.K_KP0}
@@ -780,17 +839,44 @@ class GameManager:
                 fighter.update(no_keys)
         self.camera.update()
 
-    def start_fight(self, vs_ai):
-        self.touch_ui.clear()
-        self.match_id += 1
-        self.ai_mode = vs_ai; self.ai = AIController(self.ctrl_p2) if vs_ai else None
+    def start_fight(self, vs_ai, next_arcade_level=False):
+        if not next_arcade_level:
+            self.touch_ui.clear()
+            self.match_id += 1
+            self.arcade_level = 1
+        
+        # Read game mode and difficulty
+        difficulty = "Normal"
+        self.game_mode = "Hizli Mac"
+        if web_platform:
+            try:
+                diff = getattr(web_platform.window, "dovus_difficulty", None)
+                if diff: difficulty = str(diff)
+                mode = getattr(web_platform.window, "dovus_game_mode", None)
+                if mode: self.game_mode = str(mode)
+            except: pass
+            
+        if self.game_mode == "Antrenman": difficulty = "Antrenman"
+            
+        self.ai_mode = vs_ai; self.ai = AIController(self.ctrl_p2, difficulty) if vs_ai else None
         p1_character = web_selected_character()
-        opponents = [character_id for character_id in CHARACTER_STATS if character_id != p1_character]
-        p2_character = random.choice(opponents) if opponents else "Shinobi"
+        
+        if self.game_mode == "Arcade":
+            arcade_opponents = ["Fighter", "Samurai", "Shinobi", "Countess_Vampire", "Satyr_2", "Satyr_3"]
+            p2_character = arcade_opponents[min(self.arcade_level - 1, 5)]
+        else:
+            opponents = [c for c in CHARACTER_STATS if c != p1_character]
+            p2_character = random.choice(opponents) if opponents else "Shinobi"
+            
         self.p1 = Fighter("P1", p1_character, P1_COLOR, 300, 1, self.ctrl_p1)
         self.p2 = Fighter("P2", p2_character, P2_COLOR, 700, -1, self.ctrl_p2)
         if vs_ai:
-            self.p2.name = f"{self.p2.name} AI"
+            if self.game_mode == "Arcade":
+                self.p2.name = f"{self.p2.name} (Bölüm {self.arcade_level})"
+            elif self.game_mode == "Antrenman":
+                self.p2.name = f"{self.p2.name} (Antrenman)"
+            else:
+                self.p2.name = f"{self.p2.name} AI ({difficulty})"
         self.reset_round(); self.state = "FIGHT"
 
     def reset_round(self):
@@ -800,8 +886,19 @@ class GameManager:
         self.p1.pos, self.p2.pos = [250, GROUND_Y], [774, GROUND_Y]
         self.p1.change_state(IdleState()); self.p2.change_state(IdleState())
         self.p1.is_ko = self.p2.is_ko = False
+        self.p1.combo_count = self.p2.combo_count = 0
+        self.p1.combo_timer = self.p2.combo_timer = 0
         self.timer = ROUND_TIME; self.last_tick = pygame.time.get_ticks()
         self.particles.particles.clear()
+        self.slow_mo_frames = 0; self.flash_alpha = 0
+        
+        self.arena_theme = random.choice([
+            {"bg": (13, 27, 42), "bot": (65, 90, 119), "ground": (43, 43, 43)},
+            {"bg": (30, 5, 5), "bot": (90, 20, 20), "ground": (40, 15, 15)},
+            {"bg": (5, 25, 15), "bot": (20, 80, 40), "ground": (15, 35, 20)},
+            {"bg": (50, 20, 0), "bot": (120, 50, 0), "ground": (50, 25, 10)},
+            {"bg": (10, 10, 10), "bot": (40, 40, 40), "ground": (25, 25, 25)}
+        ])
 
     def update(self):
         if self.state == "MENU":
@@ -837,29 +934,83 @@ class GameManager:
         self.p1.special_meter = min(100, self.p1.special_meter + SPECIAL_RECHARGE_RATE)
         self.p2.special_meter = min(100, self.p2.special_meter + SPECIAL_RECHARGE_RATE)
         
+        if getattr(self, "game_mode", "") == "Antrenman":
+            self.p1.special_meter = 100
+            if self.p2.health <= 0:
+                self.p2.health = MAX_HEALTH
+                self.p2.is_ko = False
+                self.p2.change_state(IdleState())
+        
+        if self.flash_alpha > 0: self.flash_alpha = max(0, self.flash_alpha - 5)
+        if self.slow_mo_frames > 0: self.slow_mo_frames -= 1
+        
         if pygame.time.get_ticks() - self.last_tick >= 1000 and self.state == "FIGHT":
-            self.timer -= 1; self.last_tick = pygame.time.get_ticks()
-            if self.timer <= 0: self.handle_round_end(True)
+            self.last_tick = pygame.time.get_ticks()
+            if getattr(self, "game_mode", "") != "Antrenman":
+                self.timer -= 1
+                if self.timer <= 0: self.handle_round_end(True)
 
     def check_collisions(self):
         for attacker, defender in [(self.p1, self.p2), (self.p2, self.p1)]:
             if attacker.hitbox and attacker.hitbox.colliderect(defender.hurtbox) and not attacker.hit_connected:
+                # Dodge check
+                if random.random() < defender.dodge_chance and not isinstance(defender.state, BlockState):
+                    self.particles.emit_text(defender.pos[0], defender.pos[1]-145, "DODGE!", (150, 255, 150))
+                    attacker.hit_connected = True
+                    continue
+                    
                 attacker.hit_connected = True
                 attacker.special_meter = min(100, attacker.special_meter + 10)
+                
                 if isinstance(defender.state, BlockState) and defender.facing != attacker.facing:
                     damage = attacker.current_damage * BLOCK_REDUCTION
                     defender.take_damage(damage)
+                    sounds.play("block")
                     self.particles.emit_block(defender.pos[0], defender.pos[1]-60)
                     self.particles.emit_text(defender.pos[0], defender.pos[1]-145, "BLOK", (120, 210, 255))
+                    attacker.combo_count = 0 
+                    
+                    if defender.reflect_damage > 0:
+                        reflect = damage * defender.reflect_damage
+                        attacker.take_damage(reflect)
+                        self.particles.emit_text(attacker.pos[0], attacker.pos[1]-145, f"REFLECT {int(reflect)}", (255, 100, 255))
                 else:
-                    damage = attacker.current_damage
+                    attacker.combo_count += 1
+                    attacker.combo_timer = 90
+                    combo_bonus = 1.0 + (attacker.combo_count - 1) * 0.15
+                    
+                    damage = attacker.current_damage * combo_bonus
+                    
+                    if random.random() < attacker.crit_chance:
+                        damage *= 2.0
+                        self.particles.emit_text(attacker.pos[0], attacker.pos[1]-180, "CRITICAL!", (255, 50, 50))
+                        
                     defender.take_damage(damage)
+                    
+                    if attacker.lifesteal > 0:
+                        heal = damage * attacker.lifesteal
+                        attacker.health = min(MAX_HEALTH, attacker.health + heal)
+                        self.particles.emit_text(attacker.pos[0], attacker.pos[1]-145, f"+{int(heal)} HP", (50, 255, 50))
+                    elif attacker.character_id == "Yurei" and isinstance(attacker.state, SpecialState):
+                        heal = damage * 0.3
+                        attacker.health = min(MAX_HEALTH, attacker.health + heal)
+                        self.particles.emit_text(attacker.pos[0], attacker.pos[1]-145, f"+{int(heal)} HP", (50, 255, 50))
+                    
+                    sounds.play("hit")
                     defender.change_state(HitStunState())
-                    self.particles.emit_hit(defender.pos[0], defender.pos[1]-60); self.camera.shake()
+                    self.particles.emit_hit(defender.pos[0], defender.pos[1]-60); self.camera.shake(intensity=8 + attacker.combo_count*2)
                     self.particles.emit_text(defender.pos[0], defender.pos[1]-145, f"-{int(damage)}", (255, 230, 80))
+                    
+                    if attacker.combo_count >= 3:
+                        self.particles.emit_text(attacker.pos[0], attacker.pos[1]-160, f"{attacker.combo_count} COMBO!", (255, 100, 50))
+                
                 if defender.health <= 0 and self.state == "FIGHT":
+                    sounds.play("ko")
                     defender.is_ko = True
                     defender.change_state(KOState())
+                    self.slow_mo_frames = 60
+                    self.flash_alpha = 255
+                    self.camera.shake(frames=30, intensity=15)
                     self.handle_round_end(False, attacker)
 
     def handle_round_end(self, timeout, winner=None):
@@ -875,28 +1026,33 @@ class GameManager:
                 self.is_draw = True
         if winner:
             winner.rounds_won += 1
-            if winner.rounds_won >= ROUNDS_TO_WIN: self.state = "GAME_OVER"
+            if winner.rounds_won >= ROUNDS_TO_WIN: 
+                if getattr(self, "game_mode", "") == "Arcade" and winner == self.p1 and getattr(self, "arcade_level", 1) < 6:
+                    self.arcade_level += 1
+                    self.start_fight(True, next_arcade_level=True)
+                else:
+                    self.state = "GAME_OVER"
+                    if getattr(self, "game_mode", "") == "Arcade" and winner == self.p1 and getattr(self, "arcade_level", 1) == 6:
+                        if web_platform:
+                            try: web_platform.window.eval("globalThis.dovus_arcade_won = true;")
+                            except: pass
 
     def draw(self, surface):
+        bg = getattr(self, 'arena_theme', {"bg": BG_TOP, "bot": BG_BOT, "ground": GROUND_COLOR})
         for i in range(HEIGHT):
-            color = [BG_TOP[j] + (BG_BOT[j]-BG_TOP[j])*(i/HEIGHT) for j in range(3)]
+            color = [bg["bg"][j] + (bg["bot"][j]-bg["bg"][j])*(i/HEIGHT) for j in range(3)]
             pygame.draw.line(surface, color, (0, i), (WIDTH, i))
-        pygame.draw.rect(surface, GROUND_COLOR, (0, GROUND_Y + self.camera.offset[1], WIDTH, HEIGHT))
+        pygame.draw.rect(surface, bg["ground"], (0, GROUND_Y + self.camera.offset[1], WIDTH, HEIGHT))
 
         if self.state == "MENU":
-            # Arka plan - koyu gradient
             pygame.draw.rect(surface, (8, 16, 28), (0, 0, WIDTH, HEIGHT))
-            # Dekoratif daireler
             for radius, ring_color in ((360, (20, 64, 95)), (260, (35, 80, 112)), (180, (25, 70, 100))):
                 pygame.draw.circle(surface, ring_color, (WIDTH // 2, HEIGHT // 2), radius, 2)
-            # Alt gradient
             for i in range(HEIGHT // 2, HEIGHT):
                 t = (i - HEIGHT // 2) / (HEIGHT // 2)
                 color = [8 + (65 - 8) * t, 16 + (90 - 16) * t, 28 + (119 - 28) * t]
                 pygame.draw.line(surface, color, (0, i), (WIDTH, i))
-            # Başlık
             pygame.draw.line(surface, HIGHLIGHT, (WIDTH // 2 - 220, 148), (WIDTH // 2 + 220, 148), 3)
-
             title_shadow = font_large.render("STREET FIGHTER PY", True, (0, 0, 0))
             title = font_large.render("STREET FIGHTER PY", True, HIGHLIGHT)
             title_x = WIDTH // 2 - title.get_width() // 2
@@ -904,7 +1060,6 @@ class GameManager:
             surface.blit(title, (title_x, 42))
             sub = font_small.render("ARENA SENI BEKLIYOR!", True, TEXT_COLOR)
             surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 122))
-
             hint = font_touch.render("Karakterini sec, arenaya gir, coin kazan.", True, (210, 220, 230))
             surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, 168))
             return
@@ -922,6 +1077,10 @@ class GameManager:
             surface.blit(font_touch.render("OZEL HAZIR", True, HIGHLIGHT), (260, 61))
         for i in range(ROUNDS_TO_WIN): pygame.draw.circle(surface, HIGHLIGHT if i < self.p1.rounds_won else (100,100,100), (50 + i*25, 85), 10)
 
+        if self.p1.combo_count >= 2:
+            combo_txt = font_med.render(f"{self.p1.combo_count} HIT COMBO", True, (255, 120, 50))
+            surface.blit(combo_txt, (50, 110))
+
         pygame.draw.rect(surface, (255,0,0), (WIDTH-450, 30, 400, 30))
         pygame.draw.rect(surface, (0,255,0), (WIDTH-450 + 400*(1-self.p2.health/MAX_HEALTH), 30, 400*(self.p2.health/MAX_HEALTH), 30))
         pygame.draw.rect(surface, TEXT_COLOR, (WIDTH-450, 30, 400, 30), 2)
@@ -933,6 +1092,10 @@ class GameManager:
             ready = font_touch.render("OZEL HAZIR", True, HIGHLIGHT)
             surface.blit(ready, (WIDTH - 260 - ready.get_width(), 61))
         for i in range(ROUNDS_TO_WIN): pygame.draw.circle(surface, HIGHLIGHT if i < self.p2.rounds_won else (100,100,100), (WIDTH - 50 - i*25, 85), 10)
+
+        if self.p2.combo_count >= 2:
+            combo_txt = font_med.render(f"{self.p2.combo_count} HIT COMBO", True, (255, 120, 50))
+            surface.blit(combo_txt, (WIDTH - 50 - combo_txt.get_width(), 110))
 
         t_surf = font_large.render(str(self.timer), True, HIGHLIGHT)
         surface.blit(t_surf, (WIDTH//2 - t_surf.get_width()//2, 20))
@@ -951,7 +1114,12 @@ class GameManager:
             surface.blit(txt, (WIDTH // 2 - txt.get_width() // 2, HEIGHT // 2 - 120))
             hint = font_small.render("Yeni mac icin TEKRAR BASLAT butonuna bas.", True, (180, 180, 180))
             surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, HEIGHT // 2 + 70))
-            return
+        
+        if getattr(self, "flash_alpha", 0) > 0:
+            flash_surf = pygame.Surface((WIDTH, HEIGHT))
+            flash_surf.fill((255, 255, 255))
+            flash_surf.set_alpha(self.flash_alpha)
+            surface.blit(flash_surf, (0, 0))
 
     def restart(self):
         self.touch_ui.clear()
@@ -999,7 +1167,9 @@ async def main():
         game.draw(game_surface)
         present_game()
         pygame.display.flip()
-        clock.tick(FPS)
+        
+        current_fps = 20 if getattr(game, 'slow_mo_frames', 0) > 0 else FPS
+        clock.tick(current_fps)
         
         # Tarayıcı sekmesinin donmasını engellemek için asyncio uyku komutu (Zorunlu)
         await asyncio.sleep(0)
@@ -1007,6 +1177,5 @@ async def main():
     pygame.quit()
     sys.exit()
 
-# Script çalıştırıldığında asenkron ana döngüyü başlat
 if __name__ == "__main__":
     asyncio.run(main())

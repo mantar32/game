@@ -249,6 +249,9 @@ globalThis.dovus_match_id = 0;
 globalThis.dovus_home = false;
 globalThis.__dovus_home = false;
 globalThis.dovus_character = globalThis.dovus_character || "Fighter";
+globalThis.dovus_difficulty = globalThis.dovus_difficulty || "Normal";
+globalThis.dovus_game_mode = globalThis.dovus_game_mode || "Hizli Mac";
+globalThis.dovus_arcade_won = false;
 
 const characterCatalog = {
     Fighter: { label: "FIGHTER", role: "DENGELI", price: 0 },
@@ -296,11 +299,35 @@ globalThis.dovus_coins = readStoredNumber(storageKeys.coins, STARTING_COINS);
 globalThis.dovus_unlocked = readUnlockedCharacters();
 let lastSettledMatch = readStoredNumber(storageKeys.rewardedMatch, 0);
 
+// Stats tracking
+globalThis.dovus_stats = {
+    wins: readStoredNumber("dovus_stats_wins", 0),
+    losses: readStoredNumber("dovus_stats_losses", 0),
+};
+
+function readStoredObject(key, fallback) {
+    try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : fallback;
+    } catch { return fallback; }
+}
+
+globalThis.dovus_badges = readStoredObject("dovus_badges", {});
+globalThis.dovus_quests = readStoredObject("dovus_quests", { date: new Date().toDateString(), wins: 0, claimed: false });
+
+if (globalThis.dovus_quests.date !== new Date().toDateString()) {
+    globalThis.dovus_quests = { date: new Date().toDateString(), wins: 0, claimed: false };
+}
+
 function saveEconomy() {
     try {
         localStorage.setItem(storageKeys.coins, String(globalThis.dovus_coins));
         localStorage.setItem(storageKeys.unlocked, JSON.stringify(globalThis.dovus_unlocked));
         localStorage.setItem(storageKeys.rewardedMatch, String(lastSettledMatch));
+        localStorage.setItem("dovus_stats_wins", String(globalThis.dovus_stats.wins));
+        localStorage.setItem("dovus_stats_losses", String(globalThis.dovus_stats.losses));
+        localStorage.setItem("dovus_badges", JSON.stringify(globalThis.dovus_badges));
+        localStorage.setItem("dovus_quests", JSON.stringify(globalThis.dovus_quests));
     } catch {
         // localStorage kapaliysa oyun yine calisir, sadece satin alma kalici olmaz.
     }
@@ -344,6 +371,10 @@ function setWalletMessage(message) {
 function renderEconomyUI(message = "") {
     const coinCount = document.getElementById("coin-count");
     if (coinCount) coinCount.textContent = String(globalThis.dovus_coins);
+    
+    const statsText = document.getElementById("stats-text");
+    if (statsText) statsText.textContent = `(Galibiyet: ${globalThis.dovus_stats.wins} | Maglubiyet: ${globalThis.dovus_stats.losses})`;
+    
     setWalletMessage(message);
     document.querySelectorAll(".character-button").forEach((button) => {
         const character = button.dataset.character;
@@ -367,13 +398,49 @@ function settleMatchEconomy() {
         matchId !== lastSettledMatch
     ) {
         let message = "";
-        if (globalThis.dovus_p1_won) {
-            globalThis.dovus_coins += WIN_REWARD;
-            message = `Round kazandin: +${WIN_REWARD} coin`;
-        } else if (globalThis.dovus_p1_dead) {
-            globalThis.dovus_coins = Math.max(0, globalThis.dovus_coins - DEATH_PENALTY);
-            message = `Oldun: -${DEATH_PENALTY} coin`;
+        
+        if (globalThis.dovus_arcade_won) {
+            globalThis.dovus_coins += 100;
+            globalThis.dovus_stats.wins += 1;
+            message = `ARCADE TAMAMLANDI! +100 coin`;
+            globalThis.dovus_arcade_won = false;
+            
+            if (!globalThis.dovus_badges["ArcadeMaster"]) {
+                globalThis.dovus_badges["ArcadeMaster"] = true;
+                message += " [Yeni Rozet!]";
+            }
         }
+        else if (globalThis.dovus_p1_won) {
+            let reward = WIN_REWARD;
+            if (globalThis.dovus_difficulty === "Zor") reward += 10;
+            globalThis.dovus_coins += reward;
+            globalThis.dovus_stats.wins += 1;
+            globalThis.dovus_quests.wins += 1;
+            
+            message = `Round kazandin: +${reward} coin`;
+            
+            if (!globalThis.dovus_badges["FirstBlood"]) {
+                globalThis.dovus_badges["FirstBlood"] = true;
+                message += " [Rozet: Ilk Kan!]";
+            }
+            if (globalThis.dovus_stats.wins >= 10 && !globalThis.dovus_badges["Veteran"]) {
+                globalThis.dovus_badges["Veteran"] = true;
+                message += " [Rozet: Veteran!]";
+            }
+            if (globalThis.dovus_quests.wins >= 3 && !globalThis.dovus_quests.claimed) {
+                globalThis.dovus_coins += 50;
+                globalThis.dovus_quests.claimed = true;
+                message += " [Gunluk Gorev: +50 Coin!]";
+            }
+            
+        } else if (globalThis.dovus_p1_dead) {
+            if (globalThis.dovus_game_mode !== "Antrenman") {
+                globalThis.dovus_coins = Math.max(0, globalThis.dovus_coins - DEATH_PENALTY);
+                globalThis.dovus_stats.losses += 1;
+                message = `Oldun: -${DEATH_PENALTY} coin`;
+            }
+        }
+        
         lastSettledMatch = matchId;
         saveEconomy();
         renderEconomyUI(message);
@@ -489,6 +556,10 @@ function updateRestartButton() {
     const walletPanel = document.getElementById("wallet-panel");
     if (walletPanel) {
         walletPanel.hidden = !isMenu;
+    }
+    const diffContainer = document.getElementById("difficulty-container");
+    if (diffContainer) {
+        diffContainer.hidden = !isMenu;
     }
     const characterSelect = document.getElementById("character-select");
     if (characterSelect) {
@@ -614,6 +685,35 @@ function setupTouchKeyboard() {
         button.addEventListener("touchstart", choose, { passive: false });
         button.addEventListener("click", choose);
     });
+    const diffSelect = document.getElementById("difficulty-select");
+    if (diffSelect) {
+        diffSelect.value = globalThis.dovus_difficulty;
+        diffSelect.addEventListener("change", (e) => {
+            globalThis.dovus_difficulty = e.target.value;
+        });
+    }
+    const modeSelect = document.getElementById("mode-select");
+    if (modeSelect) {
+        modeSelect.value = globalThis.dovus_game_mode;
+        modeSelect.addEventListener("change", (e) => {
+            globalThis.dovus_game_mode = e.target.value;
+        });
+    }
+    
+    document.getElementById("btn-achievements")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        let html = "<h3>Gunluk Gorev</h3>";
+        html += `<p>3 Mac Kazan: ${globalThis.dovus_quests.wins}/3 ${globalThis.dovus_quests.claimed ? '(Tamamlandi)' : ''}</p>`;
+        html += "<h3>Kazanilan Rozetler</h3><ul>";
+        for (let b in globalThis.dovus_badges) {
+            html += `<li>${b}</li>`;
+        }
+        if (Object.keys(globalThis.dovus_badges).length === 0) html += "<li>Henuz rozet yok.</li>";
+        html += "</ul><button onclick='document.getElementById(\"achievements-modal\").hidden=true'>Kapat</button>";
+        document.getElementById("achievements-content").innerHTML = html;
+        document.getElementById("achievements-modal").hidden = false;
+    });
+
     if (!ownsCharacter(globalThis.dovus_character)) {
         globalThis.dovus_character = "Fighter";
     }
@@ -880,6 +980,58 @@ setInterval(updateRestartButton, 120);
             box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
             pointer-events: auto;
             touch-action: none;
+        }
+        
+        #difficulty-container {
+            position: fixed;
+            left: 50%;
+            top: 48%;
+            transform: translateX(-50%);
+            z-index: 202;
+            color: #fff;
+            font: 700 14px/1 Arial, sans-serif;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #difficulty-select {
+            background: rgba(15, 25, 42, 0.88);
+            color: #ffd700;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font: 700 13px/1 Arial, sans-serif;
+            outline: none;
+            cursor: pointer;
+        }
+
+        #achievements-modal {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            background: rgba(15, 25, 42, 0.95);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            color: #fff;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            min-width: 300px;
+            text-align: center;
+        }
+        
+        #btn-achievements {
+            background: rgba(30, 40, 60, 0.9);
+            color: #fff;
+            border: 1px solid #ffd700;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 10px;
         }
 
         #wallet-panel {
@@ -1171,6 +1323,28 @@ height="600px"
     <div id="wallet-panel">
         COIN: <span id="coin-count">0</span>
         <span id="wallet-message"></span>
+        <br><small id="stats-text" style="color: #bbb;">(Galibiyet: 0 | Maglubiyet: 0)</small>
+        <button id="btn-achievements">Rozetler</button>
+    </div>
+    
+    <div id="achievements-modal" hidden>
+        <div id="achievements-content"></div>
+    </div>
+
+    <div id="difficulty-container">
+        Mod:
+        <select id="mode-select">
+            <option value="Hizli Mac">Hizli Mac</option>
+            <option value="Arcade">Arcade (Bosslar)</option>
+            <option value="Antrenman">Antrenman</option>
+        </select>
+        &nbsp;|&nbsp;
+        Zorluk: 
+        <select id="difficulty-select">
+            <option value="Kolay">Kolay</option>
+            <option value="Normal">Normal</option>
+            <option value="Zor">Zor</option>
+        </select>
     </div>
     <div id="character-select" aria-label="Karakter secimi">
         <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><img class="character-portrait" src="./character-previews/Fighter.png" alt=""><span class="character-name">FIGHTER</span><small>DENGELI</small></button>
