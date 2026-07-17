@@ -931,7 +931,7 @@ class GameManager:
             title_x = WIDTH // 2 - title.get_width() // 2
             surface.blit(title_shadow, (title_x + 4, 76))
             surface.blit(title, (title_x, 72))
-            sub = font_small.render("YAPAY ZEKAYA KARSI DUELLO!", True, TEXT_COLOR)
+            sub = font_small.render("ARENA SENI BEKLIYOR!", True, TEXT_COLOR)
             surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 158))
 
             hint = font_touch.render("Karakterini sec, arenaya gir, coin kazan.", True, (210, 220, 230))
