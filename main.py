@@ -921,13 +921,21 @@ class GameManager:
 
         if self.state == "MENU":
             # Başlık
-            title = font_large.render("STREET FIGHTER PY", True, HIGHLIGHT)
-            surface.blit(title, (WIDTH//2 - title.get_width()//2, 120))
-            sub = font_small.render("YAPAY ZEKAYA KARSI DUELLO!", True, TEXT_COLOR)
-            surface.blit(sub, (WIDTH//2 - sub.get_width()//2, 210))
+            pygame.draw.rect(surface, (8, 16, 28), (0, 0, WIDTH, 250))
+            for radius, ring_color in ((360, (20, 64, 95)), (260, (35, 80, 112))):
+                pygame.draw.circle(surface, ring_color, (WIDTH // 2, 110), radius, 2)
+            pygame.draw.line(surface, HIGHLIGHT, (WIDTH // 2 - 190, 178), (WIDTH // 2 + 190, 178), 3)
 
-            hint = font_small.render("Karakter sec, coin kazan, yeni savascilari ac.", True, (180, 180, 180))
-            surface.blit(hint, (WIDTH//2 - hint.get_width()//2, 260))
+            title_shadow = font_large.render("STREET FIGHTER PY", True, (0, 0, 0))
+            title = font_large.render("STREET FIGHTER PY", True, HIGHLIGHT)
+            title_x = WIDTH // 2 - title.get_width() // 2
+            surface.blit(title_shadow, (title_x + 4, 76))
+            surface.blit(title, (title_x, 72))
+            sub = font_small.render("YAPAY ZEKAYA KARSI DUELLO!", True, TEXT_COLOR)
+            surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 158))
+
+            hint = font_touch.render("Karakterini sec, arenaya gir, coin kazan.", True, (210, 220, 230))
+            surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, 202))
             return
 
         self.p1.draw(surface, self.camera.offset); self.p2.draw(surface, self.camera.offset)

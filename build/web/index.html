@@ -68,7 +68,10 @@ async def custom_site():
 
 
     def ui_callback(pkg):
-        platform.window.infobox.innerText = f"installing {pkg}"
+        try:
+            platform.window.setLoadingMessage(f"Hazirlaniyor: {pkg}")
+        except Exception:
+            platform.window.infobox.innerText = f"Hazirlaniyor: {pkg}"
 
     await shell.source(main, callback=ui_callback)
 
@@ -143,19 +146,17 @@ config = {
     fb_height : "600"
 }
 
+function setLoadingMessage(message) {
+    const loadingText = document.getElementById("loading-text");
+    if (loadingText) {
+        loadingText.textContent = message || "Oyun hazirlaniyor";
+    } else if (globalThis.infobox) {
+        infobox.textContent = message || "Oyun hazirlaniyor";
+    }
+}
+
 function show_infobox() {
-    infobox.style.display = "block";
-
-    // Measure box
-    const w = infobox.offsetWidth;
-    const h = infobox.offsetHeight;
-
-    // Center in viewport
-    const left = (window.innerWidth - w) / 2;
-    const top = (window.innerHeight - h) / 2;
-
-    infobox.style.left = left + "px";
-    infobox.style.top = top + "px";
+    infobox.style.display = "flex";
 }
 
 function force_fullscreen_canvas() {
@@ -651,13 +652,58 @@ setInterval(updateRestartButton, 120);
         }
 
         #infobox {
-            position: fixed; /* center relative to viewport */
-            background: green;
-            color: blue;
-            font-weight: bold;
-            padding: 12px 24px;
- /*           display: none; */
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: min(360px, calc(100vw - 36px));
+            max-width: calc(100vw - 36px);
+            min-height: 76px;
+            box-sizing: border-box;
+            border: 1px solid rgba(255, 215, 0, 0.45);
+            border-radius: 16px;
+            background: rgba(8, 16, 28, 0.92);
+            color: #fff;
+            padding: 14px 18px;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
             z-index: 999999;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+        }
+
+        .loader-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 255, 255, 0.18);
+            border-top-color: #ffd700;
+            border-right-color: #d64b3f;
+            animation: loader-spin 0.9s linear infinite;
+            flex: 0 0 auto;
+        }
+
+        .loader-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .loader-copy strong {
+            color: #ffd700;
+            font: 900 15px/1 Arial, sans-serif;
+        }
+
+        #loading-text {
+            color: rgba(255, 255, 255, 0.82);
+            font: 700 12px/1.25 Arial, sans-serif;
+        }
+
+        @keyframes loader-spin {
+            to { transform: rotate(360deg); }
         }
         div.emscripten { text-align: center; }
         div.emscripten_border { border: 1px solid black; }
@@ -766,20 +812,19 @@ setInterval(updateRestartButton, 120);
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 70;
-            min-width: 220px;
-            min-height: 62px;
-            border: 3px solid #ffd700;
+            min-width: 230px;
+            min-height: 58px;
+            border: 2px solid rgba(255, 215, 0, 0.95);
             border-radius: 14px;
-            background: rgba(30, 80, 190, 0.9);
+            background: linear-gradient(180deg, rgba(33, 178, 83, 0.96), rgba(19, 126, 59, 0.96));
             color: #fff;
             font: 800 20px/1 Arial, sans-serif;
-            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
             touch-action: none;
         }
 
         #start-button {
-            top: 48%;
-            background: rgba(30, 160, 70, 0.92);
+            top: 45%;
         }
 
         #restart-button {
@@ -800,14 +845,21 @@ setInterval(updateRestartButton, 120);
         #character-select {
             position: fixed;
             left: 50%;
-            top: 66%;
+            top: 64%;
             transform: translateX(-50%);
             z-index: 71;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 8px;
-            width: min(760px, calc(100vw - 24px));
+            align-items: center;
+            gap: 7px;
+            width: min(870px, calc(100vw - 24px));
+            box-sizing: border-box;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 16px;
+            background: rgba(8, 16, 28, 0.58);
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
             pointer-events: auto;
             touch-action: none;
         }
@@ -835,26 +887,44 @@ setInterval(updateRestartButton, 120);
         }
 
         .character-button {
-            min-width: 84px;
-            min-height: 40px;
+            position: relative;
+            min-width: 86px;
+            min-height: 78px;
             border: 2px solid rgba(255, 255, 255, 0.62);
             border-radius: 12px;
-            background: rgba(15, 25, 42, 0.86);
+            background: rgba(15, 25, 42, 0.88);
             color: #fff;
-            font: 800 12px/1 Arial, sans-serif;
+            font: 800 11px/1 Arial, sans-serif;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 3px;
-            padding: 3px 6px;
+            padding: 5px 5px 6px;
+            overflow: hidden;
             touch-action: none;
+        }
+
+        .character-portrait {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 5px 4px rgba(0, 0, 0, 0.45));
+            pointer-events: none;
+        }
+
+        .character-name {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .character-button small {
             color: rgba(255, 255, 255, 0.78);
-            font: 700 10px/1 Arial, sans-serif;
+            font: 700 9px/1 Arial, sans-serif;
         }
 
         .character-button.is-selected {
@@ -866,6 +936,10 @@ setInterval(updateRestartButton, 120);
             border-color: rgba(255, 255, 255, 0.38);
             background: rgba(22, 24, 32, 0.9);
             color: rgba(255, 255, 255, 0.72);
+        }
+
+        .character-button.is-locked .character-portrait {
+            filter: grayscale(0.7) brightness(0.72) drop-shadow(0 5px 4px rgba(0, 0, 0, 0.45));
         }
 
         .character-button:active {
@@ -892,9 +966,9 @@ setInterval(updateRestartButton, 120);
             }
 
             .character-button {
-                min-width: 82px;
-                min-height: 42px;
-                font-size: 12px;
+                min-width: 88px;
+                min-height: 76px;
+                font-size: 11px;
             }
         }
 
@@ -924,23 +998,30 @@ setInterval(updateRestartButton, 120);
             }
 
             #character-select {
-                top: 62%;
-                width: min(640px, calc(100vw - 20px));
+                top: 61%;
+                width: min(860px, calc(100vw - 18px));
                 gap: 5px;
+                padding: 5px;
+                border-radius: 12px;
             }
 
             .character-button {
-                min-width: 74px;
-                min-height: 32px;
+                min-width: 80px;
+                min-height: 62px;
                 border-width: 2px;
                 border-radius: 10px;
-                font-size: 10px;
+                font-size: 9px;
                 gap: 2px;
-                padding: 2px 6px;
+                padding: 3px 4px 4px;
+            }
+
+            .character-portrait {
+                width: 34px;
+                height: 34px;
             }
 
             .character-button small {
-                font-size: 9px;
+                font-size: 8px;
             }
         }
 
@@ -954,8 +1035,8 @@ setInterval(updateRestartButton, 120);
             }
 
             #character-select {
-                top: 64%;
-                width: min(690px, calc(100vw - 32px));
+                top: 63%;
+                width: min(870px, calc(100vw - 32px));
             }
         }
 
@@ -1063,20 +1144,26 @@ height="600px"
         <span id="wallet-message"></span>
     </div>
     <div id="character-select" aria-label="Karakter secimi">
-        <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><span>FIGHTER</span><small>DENGELI</small></button>
-        <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false"><span>SHINOBI</span><small>HIZLI</small></button>
-        <button class="character-button" data-character="Samurai" type="button" aria-pressed="false"><span>SAMURAI</span><small>GUCLU</small></button>
-        <button class="character-button" data-character="Gotoku" type="button" aria-pressed="false"><span>GOTOKU</span><small>180 COIN</small></button>
-        <button class="character-button" data-character="Onre" type="button" aria-pressed="false"><span>ONRE</span><small>220 COIN</small></button>
-        <button class="character-button" data-character="Yurei" type="button" aria-pressed="false"><span>YUREI</span><small>260 COIN</small></button>
-        <button class="character-button" data-character="Converted_Vampire" type="button" aria-pressed="false"><span>VAMPIR</span><small>300 COIN</small></button>
-        <button class="character-button" data-character="Countess_Vampire" type="button" aria-pressed="false"><span>KONTES</span><small>340 COIN</small></button>
-        <button class="character-button" data-character="Vampire_Girl" type="button" aria-pressed="false"><span>VAMP GIRL</span><small>380 COIN</small></button>
+        <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><img class="character-portrait" src="./character-previews/Fighter.png" alt=""><span class="character-name">FIGHTER</span><small>DENGELI</small></button>
+        <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Shinobi.png" alt=""><span class="character-name">SHINOBI</span><small>HIZLI</small></button>
+        <button class="character-button" data-character="Samurai" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Samurai.png" alt=""><span class="character-name">SAMURAI</span><small>GUCLU</small></button>
+        <button class="character-button" data-character="Gotoku" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Gotoku.png" alt=""><span class="character-name">GOTOKU</span><small>180 COIN</small></button>
+        <button class="character-button" data-character="Onre" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Onre.png" alt=""><span class="character-name">ONRE</span><small>220 COIN</small></button>
+        <button class="character-button" data-character="Yurei" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Yurei.png" alt=""><span class="character-name">YUREI</span><small>260 COIN</small></button>
+        <button class="character-button" data-character="Converted_Vampire" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Converted_Vampire.png" alt=""><span class="character-name">VAMPIR</span><small>300 COIN</small></button>
+        <button class="character-button" data-character="Countess_Vampire" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Countess_Vampire.png" alt=""><span class="character-name">KONTES</span><small>340 COIN</small></button>
+        <button class="character-button" data-character="Vampire_Girl" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Vampire_Girl.png" alt=""><span class="character-name">VAMP GIRL</span><small>380 COIN</small></button>
     </div>
     <button id="restart-button" type="button" hidden>TEKRAR BASLAT</button>
     <button id="home-button" type="button" hidden>ANASAYFA</button>
 
-    <div id="infobox">Loading, please wait ...</div>
+    <div id="infobox" role="status" aria-live="polite">
+        <div class="loader-mark"></div>
+        <div class="loader-copy">
+            <strong>DOVUS YUKLENIYOR</strong>
+            <span id="loading-text">Oyun hazirlaniyor</span>
+        </div>
+    </div>
 
     <div id=html></div>
 
