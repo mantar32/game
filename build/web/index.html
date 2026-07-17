@@ -231,6 +231,7 @@ const touchKeyMap = {
 };
 
 const activeTouchKeys = new Set();
+const actionTouchKeys = new Set(["j", "k", "l", "u"]);
 globalThis.dovus_keys = globalThis.dovus_keys || Object.create(null);
 globalThis.dovus_start = false;
 globalThis.dovus_restart = false;
@@ -414,6 +415,16 @@ function selectCharacter(character) {
 function pressTouchKey(button) {
     const keyName = button.dataset.key;
     if (!keyName || activeTouchKeys.has(keyName)) return;
+    if (actionTouchKeys.has(keyName)) {
+        for (const otherKey of actionTouchKeys) {
+            if (otherKey === keyName) continue;
+            activeTouchKeys.delete(otherKey);
+            globalThis.dovus_keys[otherKey] = false;
+            globalThis.__dovus_keys[otherKey] = false;
+            document.querySelector(`.touch-button[data-key="${otherKey}"]`)?.classList.remove("is-down");
+            emitKeyboard("keyup", otherKey);
+        }
+    }
     tapStartKey();
     activeTouchKeys.add(keyName);
     globalThis.dovus_keys[keyName] = true;

@@ -398,6 +398,7 @@ class MobileTouchController:
     BTN = 86
     ABTN = 88
     SAFE_BOTTOM = 74
+    ACTION_KEYS = {pygame.K_j, pygame.K_k, pygame.K_l, pygame.K_u}
 
     def __init__(self):
         p = self.PAD
@@ -439,6 +440,11 @@ class MobileTouchController:
             old_button.is_pressed = False
             self.virtual_keys[old_button.key] = False
         if button:
+            if button.key in self.ACTION_KEYS:
+                for other in self.buttons:
+                    if other.key in self.ACTION_KEYS and other.key != button.key:
+                        other.is_pressed = False
+                        self.virtual_keys[other.key] = False
             button.is_pressed = True
             self.virtual_keys[button.key] = True
             self.active_touches[touch_id] = button
@@ -623,8 +629,8 @@ class IdleState(State):
     def update(self, fighter, keys): fighter.vel[0] = 0
     def handle_input(self, fighter, keys):
         if fighter.is_ko: return
-        if keys[fighter.controls['punch']]: fighter.change_state(PunchState())
-        elif keys[fighter.controls['kick']]: fighter.change_state(KickState())
+        if keys[fighter.controls['kick']]: fighter.change_state(KickState())
+        elif keys[fighter.controls['punch']]: fighter.change_state(PunchState())
         elif keys[fighter.controls['special']] and fighter.special_meter >= 100: fighter.change_state(SpecialState())
         elif keys[fighter.controls['block']]: fighter.change_state(BlockState())
         elif keys[fighter.controls['up']]: fighter.change_state(JumpState())
@@ -638,8 +644,8 @@ class WalkState(State):
         elif keys[fighter.controls['right']]: fighter.vel[0] = fighter.walk_speed; fighter.facing = 1
         else: fighter.change_state(IdleState())
     def handle_input(self, fighter, keys):
-        if keys[fighter.controls['punch']]: fighter.change_state(PunchState())
-        elif keys[fighter.controls['kick']]: fighter.change_state(KickState())
+        if keys[fighter.controls['kick']]: fighter.change_state(KickState())
+        elif keys[fighter.controls['punch']]: fighter.change_state(PunchState())
         elif keys[fighter.controls['special']] and fighter.special_meter >= 100: fighter.change_state(SpecialState())
         elif keys[fighter.controls['block']]: fighter.change_state(BlockState())
         elif keys[fighter.controls['up']]: fighter.change_state(JumpState())
