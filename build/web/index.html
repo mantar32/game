@@ -771,6 +771,12 @@ function initMultiplayer() {
         globalThis.dovus_network.username = inputUser.value;
     });
 
+    // Tuşların Pygame'e gidip oyunu başlatmasını engelle
+    [inputUser, inputRoom].forEach(inp => {
+        inp.addEventListener("keydown", (e) => e.stopPropagation());
+        inp.addEventListener("keyup", (e) => e.stopPropagation());
+    });
+
     const setupConnection = (conn) => {
         globalThis.dovus_network.conn = conn;
         conn.on("open", () => {
