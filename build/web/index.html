@@ -557,9 +557,9 @@ function updateRestartButton() {
     if (walletPanel) {
         walletPanel.hidden = !isMenu;
     }
-    const diffContainer = document.getElementById("difficulty-container");
-    if (diffContainer) {
-        diffContainer.hidden = !isMenu;
+    const settingsPanel = document.getElementById("game-settings-panel");
+    if (settingsPanel) {
+        settingsPanel.hidden = !isMenu;
     }
     const characterSelect = document.getElementById("character-select");
     if (characterSelect) {
@@ -685,20 +685,37 @@ function setupTouchKeyboard() {
         button.addEventListener("touchstart", choose, { passive: false });
         button.addEventListener("click", choose);
     });
-    const diffSelect = document.getElementById("difficulty-select");
-    if (diffSelect) {
-        diffSelect.value = globalThis.dovus_difficulty;
-        diffSelect.addEventListener("change", (e) => {
-            globalThis.dovus_difficulty = e.target.value;
-        });
-    }
-    const modeSelect = document.getElementById("mode-select");
-    if (modeSelect) {
-        modeSelect.value = globalThis.dovus_game_mode;
-        modeSelect.addEventListener("change", (e) => {
-            globalThis.dovus_game_mode = e.target.value;
-        });
-    }
+    // --- Mode Toggle Buttons ---
+    document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach((btn) => {
+        if (btn.dataset.mode === globalThis.dovus_game_mode) {
+            document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+        }
+        const handler = (e) => {
+            e.preventDefault();
+            document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            globalThis.dovus_game_mode = btn.dataset.mode;
+        };
+        btn.addEventListener("pointerdown", handler);
+        btn.addEventListener("touchstart", handler, { passive: false });
+    });
+
+    // --- Difficulty Toggle Buttons ---
+    document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach((btn) => {
+        if (btn.dataset.diff === globalThis.dovus_difficulty) {
+            document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+        }
+        const handler = (e) => {
+            e.preventDefault();
+            document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            globalThis.dovus_difficulty = btn.dataset.diff;
+        };
+        btn.addEventListener("pointerdown", handler);
+        btn.addEventListener("touchstart", handler, { passive: false });
+    });
     
     document.getElementById("btn-achievements")?.addEventListener("click", (e) => {
         e.preventDefault();
@@ -982,29 +999,109 @@ setInterval(updateRestartButton, 120);
             touch-action: none;
         }
         
-        #difficulty-container {
+        #game-settings-panel {
             position: fixed;
             left: 50%;
-            top: 48%;
+            top: 45%;
             transform: translateX(-50%);
             z-index: 202;
-            color: #fff;
-            font: 700 14px/1 Arial, sans-serif;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 10px;
+            padding: 14px 22px;
+            border-radius: 16px;
+            background: rgba(8, 16, 28, 0.88);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            width: min(420px, calc(100vw - 40px));
         }
 
-        #difficulty-select {
-            background: rgba(15, 25, 42, 0.88);
-            color: #ffd700;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font: 700 13px/1 Arial, sans-serif;
-            outline: none;
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .settings-label {
+            color: rgba(255, 255, 255, 0.55);
+            font: 700 10px/1 Arial, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            min-width: 62px;
+            text-align: right;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px 4px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.5);
+            font: 700 11px/1.2 Arial, sans-serif;
             cursor: pointer;
+            text-align: center;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        .toggle-btn.is-active {
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+        }
+
+        .toggle-btn .toggle-sub {
+            display: block;
+            font-size: 8px;
+            font-weight: 400;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        /* Mode specific active colors */
+        .toggle-btn[data-mode="Hizli Mac"].is-active {
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.5), rgba(33, 150, 243, 0.25));
+            border-color: rgba(33, 150, 243, 0.6);
+        }
+        .toggle-btn[data-mode="Arcade"].is-active {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.5), rgba(255, 152, 0, 0.25));
+            border-color: rgba(255, 152, 0, 0.6);
+        }
+        .toggle-btn[data-mode="Antrenman"].is-active {
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.5), rgba(156, 39, 176, 0.25));
+            border-color: rgba(156, 39, 176, 0.6);
+        }
+
+        /* Difficulty specific active colors */
+        .toggle-btn[data-diff="Kolay"].is-active {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.55), rgba(76, 175, 80, 0.25));
+            border-color: rgba(76, 175, 80, 0.7);
+        }
+        .toggle-btn[data-diff="Normal"].is-active {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.55), rgba(255, 193, 7, 0.25));
+            border-color: rgba(255, 193, 7, 0.7);
+        }
+        .toggle-btn[data-diff="Zor"].is-active {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.55), rgba(244, 67, 54, 0.25));
+            border-color: rgba(244, 67, 54, 0.7);
         }
 
         #achievements-modal {
@@ -1331,20 +1428,23 @@ height="600px"
         <div id="achievements-content"></div>
     </div>
 
-    <div id="difficulty-container">
-        Mod:
-        <select id="mode-select">
-            <option value="Hizli Mac">Hizli Mac</option>
-            <option value="Arcade">Arcade (Bosslar)</option>
-            <option value="Antrenman">Antrenman</option>
-        </select>
-        &nbsp;|&nbsp;
-        Zorluk: 
-        <select id="difficulty-select">
-            <option value="Kolay">Kolay</option>
-            <option value="Normal">Normal</option>
-            <option value="Zor">Zor</option>
-        </select>
+    <div id="game-settings-panel">
+        <div class="settings-row">
+            <span class="settings-label">MOD</span>
+            <div class="toggle-group" id="mode-toggle-group">
+                <button class="toggle-btn is-active" data-mode="Hizli Mac" type="button">⚔️ Hızlı<span class="toggle-sub">Tek Maç</span></button>
+                <button class="toggle-btn" data-mode="Arcade" type="button">🏆 Arcade<span class="toggle-sub">6 Boss</span></button>
+                <button class="toggle-btn" data-mode="Antrenman" type="button">🥋 Pratik<span class="toggle-sub">Serbest</span></button>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">ZORLUK</span>
+            <div class="toggle-group" id="diff-toggle-group">
+                <button class="toggle-btn" data-diff="Kolay" type="button">😌 Kolay<span class="toggle-sub">Blok %20</span></button>
+                <button class="toggle-btn is-active" data-diff="Normal" type="button">😐 Normal<span class="toggle-sub">Blok %45</span></button>
+                <button class="toggle-btn" data-diff="Zor" type="button">😈 Zor<span class="toggle-sub">Blok %70</span></button>
+            </div>
+        </div>
     </div>
     <div id="character-select" aria-label="Karakter secimi">
         <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><img class="character-portrait" src="./character-previews/Fighter.png" alt=""><span class="character-name">FIGHTER</span><small>DENGELI</small></button>
