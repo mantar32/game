@@ -311,6 +311,14 @@ def publish_web_state(game):
         pass
 
 
+def web_is_input_focused():
+    if web_platform is None:
+        return False
+    try:
+        return bool(web_platform.window.eval("globalThis.dovus_input_focused"))
+    except Exception:
+        return False
+
 # --- Network Helpers ---
 def web_get_network_mode():
     if web_platform is None:
@@ -1319,7 +1327,8 @@ async def main():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_1) and game.state == "MENU":
-                    game.start_fight(True)
+                    if not web_is_input_focused():
+                        game.start_fight(True)
                 elif event.key == pygame.K_r and game.state in ("ROUND_END", "GAME_OVER"):
                     game.start_fight(True)
             

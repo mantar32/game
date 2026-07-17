@@ -772,9 +772,13 @@ function initMultiplayer() {
     });
 
     // Tuşların Pygame'e gidip oyunu başlatmasını engelle
+    globalThis.dovus_input_focused = false;
     [inputUser, inputRoom].forEach(inp => {
-        inp.addEventListener("keydown", (e) => e.stopPropagation());
-        inp.addEventListener("keyup", (e) => e.stopPropagation());
+        inp.addEventListener("focus", () => { globalThis.dovus_input_focused = true; });
+        inp.addEventListener("blur", () => { globalThis.dovus_input_focused = false; });
+        ['keydown', 'keyup', 'keypress'].forEach(evt => {
+            inp.addEventListener(evt, (e) => e.stopPropagation());
+        });
     });
 
     const setupConnection = (conn) => {
