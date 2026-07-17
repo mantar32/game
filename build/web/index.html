@@ -111,6 +111,20 @@ asyncio.run( custom_site() )
 //=============================================================================
 //
 //
+//
+//
+//
+//
+//
+
+    {%- if cookiecutter.comment != "" -%}
+{{cookiecutter.comment}}
+    {% endif %}
+
+--><script type="application/javascript">
+// END BLOCK
+
+
 
 // this dict is available under PyConfig.config from __main__
 
@@ -414,7 +428,7 @@ function pressTouchKey(button) {
             emitKeyboard("keyup", otherKey);
         }
     }
-    tapStartKey();
+    // tapStartKey kaldirildi - dovus sirasinda start tetiklememeli
     activeTouchKeys.add(keyName);
     globalThis.dovus_keys[keyName] = true;
     globalThis.__dovus_keys[keyName] = true;
@@ -616,16 +630,12 @@ setInterval(updateRestartButton, 120);
 
 </script>
 
-    <title>Dövüş Oyunu | Online Dövüş Arenas&#305;</title>
+    <title>dovus_web</title>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <meta name="description" content="12 karakterli online dövüş oyunu. Karakterini seç, düşmanını yen, coin kazan!">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes"/>
-    <meta property="og:title" content="Dövüş Oyunu">
-    <meta property="og:description" content="12 karakterli online dövüş oyunu. Karakterini seç, düşmanını yen!">
-    <meta property="og:type" content="website">
 
 
     <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
@@ -726,7 +736,7 @@ setInterval(updateRestartButton, 120);
             min-height: 100vh !important;
             max-width: none !important;
             max-height: none !important;
-            z-index: 5;
+            z-index: 1;
 
             padding: 0 !important;
             margin: 0 !important;
@@ -746,7 +756,7 @@ setInterval(updateRestartButton, 120);
         #touch-controls {
             position: fixed;
             inset: 0;
-            z-index: 50;
+            z-index: 100;
             pointer-events: none;
             touch-action: none;
             user-select: none;
@@ -814,8 +824,8 @@ setInterval(updateRestartButton, 120);
         #home-button {
             position: fixed;
             left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 70;
+            transform: translateX(-50%);
+            z-index: 200;
             min-width: 230px;
             min-height: 58px;
             border: 2px solid rgba(255, 215, 0, 0.95);
@@ -825,18 +835,22 @@ setInterval(updateRestartButton, 120);
             font: 800 20px/1 Arial, sans-serif;
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
             touch-action: none;
+            cursor: pointer;
+            text-align: center;
+            line-height: 58px;
+            padding: 0 20px;
         }
 
         #start-button {
-            top: 45%;
+            top: 38%;
         }
 
         #restart-button {
-            top: 58%;
+            top: 55%;
         }
 
         #home-button {
-            top: 72%;
+            top: 68%;
             background: rgba(18, 95, 125, 0.92);
         }
 
@@ -849,9 +863,9 @@ setInterval(updateRestartButton, 120);
         #character-select {
             position: fixed;
             left: 50%;
-            top: 64%;
+            top: 52%;
             transform: translateX(-50%);
-            z-index: 71;
+            z-index: 201;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -862,7 +876,7 @@ setInterval(updateRestartButton, 120);
             padding: 8px;
             border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 16px;
-            background: rgba(8, 16, 28, 0.58);
+            background: rgba(8, 16, 28, 0.82);
             box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
             pointer-events: auto;
             touch-action: none;
@@ -871,13 +885,13 @@ setInterval(updateRestartButton, 120);
         #wallet-panel {
             position: fixed;
             left: 50%;
-            top: 56%;
+            top: 46%;
             transform: translateX(-50%);
-            z-index: 71;
+            z-index: 202;
             min-width: 280px;
             min-height: 30px;
             color: #fff;
-            font: 800 13px/1 Arial, sans-serif;
+            font: 800 15px/1 Arial, sans-serif;
             text-align: center;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
             pointer-events: none;
@@ -957,22 +971,32 @@ setInterval(updateRestartButton, 120);
                 min-width: 210px;
                 min-height: 64px;
                 font-size: 19px;
+                line-height: 64px;
+            }
+
+            #start-button {
+                top: 35%;
             }
 
             #character-select {
-                top: 67%;
+                top: 52%;
                 gap: 6px;
             }
 
             #wallet-panel {
-                top: 60%;
+                top: 44%;
                 min-width: 240px;
             }
 
             .character-button {
-                min-width: 88px;
-                min-height: 76px;
-                font-size: 11px;
+                min-width: 76px;
+                min-height: 68px;
+                font-size: 10px;
+            }
+
+            .character-portrait {
+                width: 36px;
+                height: 36px;
             }
         }
 
@@ -981,17 +1005,18 @@ setInterval(updateRestartButton, 120);
             #restart-button,
             #home-button {
                 min-width: 190px;
-                min-height: 50px;
+                min-height: 44px;
                 font-size: 16px;
                 border-width: 2px;
+                line-height: 44px;
             }
 
             #start-button {
-                top: 46%;
+                top: 32%;
             }
 
             #wallet-panel {
-                top: 54%;
+                top: 42%;
                 min-height: 24px;
                 font-size: 11px;
             }
@@ -1002,16 +1027,16 @@ setInterval(updateRestartButton, 120);
             }
 
             #character-select {
-                top: 61%;
+                top: 50%;
                 width: min(860px, calc(100vw - 18px));
-                gap: 5px;
+                gap: 4px;
                 padding: 5px;
                 border-radius: 12px;
             }
 
             .character-button {
-                min-width: 80px;
-                min-height: 62px;
+                min-width: 66px;
+                min-height: 56px;
                 border-width: 2px;
                 border-radius: 10px;
                 font-size: 9px;
@@ -1020,8 +1045,8 @@ setInterval(updateRestartButton, 120);
             }
 
             .character-portrait {
-                width: 34px;
-                height: 34px;
+                width: 28px;
+                height: 28px;
             }
 
             .character-button small {
@@ -1031,15 +1056,15 @@ setInterval(updateRestartButton, 120);
 
         @media (orientation: landscape) and (min-width: 700px) {
             #start-button {
-                top: 46%;
+                top: 38%;
             }
 
             #wallet-panel {
-                top: 55%;
+                top: 46%;
             }
 
             #character-select {
-                top: 63%;
+                top: 54%;
                 width: min(870px, calc(100vw - 32px));
             }
         }
@@ -1070,6 +1095,36 @@ setInterval(updateRestartButton, 120);
             background-color:#0d1b2a !important;
         }
 
+        .topright{
+           position:absolute;
+           top:0px;
+           right:0px;
+        }
+
+        .bottomright {
+            position:absolute;
+            top: 40%;
+            right: 0px;
+        }
+
+        .center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .trinfo{
+           position: relative;
+           right: 0px;
+           border: 1px solid black;
+        }
+
+        .framed{
+           position: relative;
+           top: 150px;
+           right: 10px;
+           border: 1px solid black;
+        }
     </style>
 
 </head>
@@ -1144,9 +1199,59 @@ height="600px"
 
     <div id=html></div>
 
-  </div>
+    <div id=crt  class=bottomright >
+
+        <div id="system" hidden>
+            <div class="button-container">
+                <button id="aiostop" disabled>AIO ÔÅÅ´©Ä</button>
+                <button id="aiopaused_true" disabled>AIO Ôûá</button>
+                <button id="aiopaused_false" disabled>AIO ÔûÂ</button>
+                <button id="pygame_mixer_music_pause" disabled>Music Ôûá</button>
+            </div>
+
+            <div class="button-container">
+                <div id=load_min>min</div>
+                <div id=load_avg>avg</div>
+                <div id=load_max>max</div>
+              <button id="load_rst" disabled>RESET</button>
+            </div>
+
+            <div id="level">(battery level unknown)</div>
+            <div id="stateBattery">(charging state unknown)</div>
+
+        </div>
+
+        <div id=box class="emscripten_border" hidden=true>
+
+            <div id="info" class="trinfo"></div>
+
+            <iframe id="iframe" class="framed" name="iframe"
+width="470px" height="90%"
+allowtransparency="true"
+style="z-index: 10; background: #FFFFFF;"
+frameborder="1"
+                allowfullscreen="true"
+                webkitallowfullscreen="true"
+                msallowfullscreen="true"
+                mozallowfullscreen="true"
+                sandbox="allow-same-origin allow-top-navigation allow-scripts allow-pointer-lock"
+                allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated"
+                src="about:blank"
+                scrolling="yes">
+            </iframe>
+        </div>
+
+    </div>
 
 
+    <div id="dlg" hidden>
+        <input type="file" id="dlg_multifile" multiple accept="image/*">
+        <label for="dlg_multifile">Select files</label>
+    </div>
+
+    <div id="pyconsole">
+        <div id="terminal" tabIndex=1 align="left"></div>
+    </div>
 
     <script type="application/javascript">
 
@@ -1156,16 +1261,58 @@ height="600px"
 
     async function custom_onload(debug_hidden) {
         // this is called before anything python is loaded
+        // make your js customization here
+        console.log(__FILE__, "custom_onload")
+
+        pyconsole.hidden = debug_hidden
+        system.hidden = debug_hidden
+        transfer.hidden = debug_hidden
+        info.hidden = debug_hidden
+        box.hidden =  debug_hidden
+
         fit_game_canvas()
         show_infobox()
     }
 
     function custom_prerun(){
+        // no python main and no (MEMFS + VFS) yet.
         console.log(__FILE__, "custom_prerun")
+
     }
 
     function custom_postrun(){
+        // python main and no VFS filesystem yet.
         console.log(__FILE__, "custom_postrun")
+
+    }
+
+    function debug() {
+        // allow to gain access to dev tools from js console
+        // but only on desktop. difficult to reach when in iframe
+        python.config.debug = true
+        custom_onload(false)
+        Module.PyRun_SimpleString("shell.uptime()")
+        window_resize()
+    }
+
+    function info_inline(data){
+        document.getElementById("info").innerHTML = data
+    }
+
+    function info_online(url) {
+        // display info about current APK
+        fetch( url /*, options */)
+            .then((response) => response.text())
+            .then((html) => {
+                info_inline(html);
+        })
+        .catch((error) => {
+            console.warn(error);
+        });
+    }
+
+    function frame_online(url) {
+        window.frames["iframe"].location = url;
     }
 
     </script>

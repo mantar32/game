@@ -675,6 +675,7 @@ class Fighter:
         self.name = self.stats["display"]
         self.walk_speed = WALK_SPEED * self.stats.get("speed", 1.0)
         self.pos = [x, GROUND_Y]; self.vel = [0, 0]; self.facing = facing
+        self.anim_timer = 0
         self.health = MAX_HEALTH; self.special_meter = 0
         self.controls = controls
         self.hurtbox = pygame.Rect(0, 0, 50, 100); self.hitbox = None
@@ -819,7 +820,7 @@ class GameManager:
         
         if self.ai_mode:
             ai_keys = self.ai.generate_input(self.p2, self.p1)
-            comb = {k: real_keys[k] for k in range(512)}
+            comb = {k: real_keys[k] for k in range(len(real_keys))}
             comb.update(ai_keys)
             p2_keys = _DictKeys(comb)
             self.p2.state.handle_input(self.p2, p2_keys)
@@ -883,22 +884,29 @@ class GameManager:
         pygame.draw.rect(surface, GROUND_COLOR, (0, GROUND_Y + self.camera.offset[1], WIDTH, HEIGHT))
 
         if self.state == "MENU":
+            # Arka plan - koyu gradient
+            pygame.draw.rect(surface, (8, 16, 28), (0, 0, WIDTH, HEIGHT))
+            # Dekoratif daireler
+            for radius, ring_color in ((360, (20, 64, 95)), (260, (35, 80, 112)), (180, (25, 70, 100))):
+                pygame.draw.circle(surface, ring_color, (WIDTH // 2, HEIGHT // 2), radius, 2)
+            # Alt gradient
+            for i in range(HEIGHT // 2, HEIGHT):
+                t = (i - HEIGHT // 2) / (HEIGHT // 2)
+                color = [8 + (65 - 8) * t, 16 + (90 - 16) * t, 28 + (119 - 28) * t]
+                pygame.draw.line(surface, color, (0, i), (WIDTH, i))
             # Başlık
-            pygame.draw.rect(surface, (8, 16, 28), (0, 0, WIDTH, 250))
-            for radius, ring_color in ((360, (20, 64, 95)), (260, (35, 80, 112))):
-                pygame.draw.circle(surface, ring_color, (WIDTH // 2, 110), radius, 2)
-            pygame.draw.line(surface, HIGHLIGHT, (WIDTH // 2 - 190, 178), (WIDTH // 2 + 190, 178), 3)
+            pygame.draw.line(surface, HIGHLIGHT, (WIDTH // 2 - 220, 148), (WIDTH // 2 + 220, 148), 3)
 
             title_shadow = font_large.render("STREET FIGHTER PY", True, (0, 0, 0))
             title = font_large.render("STREET FIGHTER PY", True, HIGHLIGHT)
             title_x = WIDTH // 2 - title.get_width() // 2
-            surface.blit(title_shadow, (title_x + 4, 76))
-            surface.blit(title, (title_x, 72))
+            surface.blit(title_shadow, (title_x + 4, 46))
+            surface.blit(title, (title_x, 42))
             sub = font_small.render("ARENA SENI BEKLIYOR!", True, TEXT_COLOR)
-            surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 158))
+            surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 122))
 
             hint = font_touch.render("Karakterini sec, arenaya gir, coin kazan.", True, (210, 220, 230))
-            surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, 202))
+            surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, 168))
             return
 
         self.p1.draw(surface, self.camera.offset); self.p2.draw(surface, self.camera.offset)
@@ -977,7 +985,11 @@ async def main():
                 game.start_fight(True)
 
         if web_restart_requested():
-            game.start_fight(True)
+            if game.state == "ROUND_END":
+                game.reset_round()
+                game.state = "FIGHT"
+            else:
+                game.start_fight(True)
 
         if web_home_requested():
             game.restart()
