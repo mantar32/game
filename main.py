@@ -108,6 +108,33 @@ CHARACTER_STATS = {
         "special": 21,
         "speed": 1.09,
     },
+    "Satyr_1": {
+        "display": "Satyr Scout",
+        "role": "Hizli",
+        "tip": "Seri boynuz hamlesi",
+        "punch": 8,
+        "kick": 13,
+        "special": 20,
+        "speed": 1.14,
+    },
+    "Satyr_2": {
+        "display": "Satyr Warrior",
+        "role": "Guclu",
+        "tip": "Agir yakin dovus",
+        "punch": 9,
+        "kick": 15,
+        "special": 23,
+        "speed": 0.98,
+    },
+    "Satyr_3": {
+        "display": "Satyr Shaman",
+        "role": "Buyucu",
+        "tip": "Charge gucu",
+        "punch": 7,
+        "kick": 12,
+        "special": 26,
+        "speed": 1.04,
+    },
 }
 
 # Colors
@@ -515,9 +542,12 @@ class SpriteManager:
         
     def resolve_anim_path(self, folder_name, anim_file):
         fallbacks = {
+            "Run.png": ["Walk.png", "Idle.png"],
             "Jump.png": ["Flight.png", "Run.png", "Walk.png", "Idle.png"],
             "Shield.png": ["Protect.png", "Idle.png"],
-            "Attack_3.png": ["Attack_4.png", "Attack_2.png"],
+            "Attack_1.png": ["Attack.png"],
+            "Attack_2.png": ["Attack.png", "Attack_1.png"],
+            "Attack_3.png": ["Charge.png", "Attack_4.png", "Attack_2.png", "Attack.png"],
         }
         for file_name in [anim_file] + fallbacks.get(anim_file, []):
             full_path = os.path.join(self.base_path, folder_name, file_name)
@@ -540,12 +570,14 @@ class SpriteManager:
             sheet = pygame.image.load(full_path).convert_alpha()
         except:
             return [pygame.Surface((128, 128))]
-        frame_w, frame_h = 128, 128
+        frame_h = sheet.get_height()
+        frame_w = frame_h
         num_frames = sheet.get_width() // frame_w
         frames = []
+        target_scale = SPRITE_SCALE * (128 / frame_h)
         for i in range(max(1, num_frames)):
             frame = sheet.subsurface(pygame.Rect(i * frame_w, 0, frame_w, frame_h))
-            frame = pygame.transform.scale(frame, (int(frame_w * SPRITE_SCALE), int(frame_h * SPRITE_SCALE)))
+            frame = pygame.transform.scale(frame, (int(frame_w * target_scale), int(frame_h * target_scale)))
             frames.append(frame)
         return frames
 
