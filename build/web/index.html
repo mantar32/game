@@ -810,6 +810,10 @@ function initMultiplayer() {
             statusDiv.style.color = "#f00";
             globalThis.dovus_network.mode = "OFFLINE";
         });
+        conn.on("error", (err) => {
+            statusDiv.textContent = "Oda Hatası: " + err;
+            statusDiv.style.color = "#f00";
+        });
     };
 
     btnCreate.addEventListener("click", () => {
@@ -827,6 +831,10 @@ function initMultiplayer() {
         peer.on("connection", (conn) => {
             setupConnection(conn);
         });
+        peer.on("error", (err) => {
+            statusDiv.textContent = "Bağlantı Hatası: " + err.type;
+            statusDiv.style.color = "#f00";
+        });
     });
 
     btnJoin.addEventListener("click", () => {
@@ -841,9 +849,14 @@ function initMultiplayer() {
         const peer = new Peer();
         globalThis.dovus_network.peer = peer;
         peer.on("open", () => {
+            statusDiv.textContent = "Bağlantı aranıyor...";
             globalThis.dovus_network.mode = "CLIENT";
             const conn = peer.connect(id);
             setupConnection(conn);
+        });
+        peer.on("error", (err) => {
+            statusDiv.textContent = "Bağlantı Hatası: " + err.type;
+            statusDiv.style.color = "#f00";
         });
     });
 
