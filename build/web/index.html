@@ -819,8 +819,16 @@ function initMultiplayer() {
     btnCreate.addEventListener("click", () => {
         statusDiv.textContent = "Oda kuruluyor...";
         statusDiv.style.color = "#ffaa00";
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        };
         const shortId = "DV-" + Math.floor(10000 + Math.random() * 90000);
-        const peer = new Peer(shortId);
+        const peer = new Peer(shortId, peerConfig);
         globalThis.dovus_network.peer = peer;
         peer.on("open", (id) => {
             globalThis.dovus_network.roomId = id;
@@ -846,7 +854,15 @@ function initMultiplayer() {
         }
         statusDiv.textContent = "Odaya bağlanılıyor...";
         statusDiv.style.color = "#ffaa00";
-        const peer = new Peer();
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        };
+        const peer = new Peer(undefined, peerConfig);
         globalThis.dovus_network.peer = peer;
         peer.on("open", () => {
             statusDiv.textContent = "Bağlantı aranıyor...";
@@ -1086,7 +1102,10 @@ setInterval(updateRestartButton, 120);
             align-items: center;
             gap: 15px;
             width: min(870px, calc(100vw - 20px));
-            pointer-events: none;
+            pointer-events: auto;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 20px;
         }
 
         #menu-ui-container > * {
