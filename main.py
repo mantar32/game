@@ -135,6 +135,33 @@ CHARACTER_STATS = {
         "special": 26,
         "speed": 1.04,
     },
+    "Fire_Wizard": {
+        "display": "Fire Wizard",
+        "role": "Atescı",
+        "tip": "Ates topu fırlatır",
+        "punch": 7,
+        "kick": 11,
+        "special": 28,
+        "speed": 0.97,
+    },
+    "Lightning_Mage": {
+        "display": "Lightning Mage",
+        "role": "Seker",
+        "tip": "Şimşek yağdırır",
+        "punch": 6,
+        "kick": 10,
+        "special": 30,
+        "speed": 1.06,
+    },
+    "Wanderer_Magician": {
+        "display": "Wanderer Magician",
+        "role": "Gezgin",
+        "tip": "Sihirli okllar",
+        "punch": 7,
+        "kick": 12,
+        "special": 26,
+        "speed": 1.02,
+    },
 }
 
 # Colors
@@ -597,7 +624,7 @@ class SpriteManager:
             "Shield.png": ["Protect.png", "Idle.png"],
             "Attack_1.png": ["Attack.png"],
             "Attack_2.png": ["Attack.png", "Attack_1.png"],
-            "Attack_3.png": ["Charge.png", "Attack_4.png", "Attack_2.png", "Attack.png"],
+            "Attack_3.png": ["Charge.png", "Fireball.png", "Flame_jet.png", "Light_charge.png", "Magic_sphere.png", "Attack_4.png", "Attack_2.png", "Attack.png"],
         }
         for file_name in [anim_file] + fallbacks.get(anim_file, []):
             full_path = os.path.join(self.base_path, folder_name, file_name)
@@ -753,6 +780,7 @@ class IdleState(State):
     def update(self, fighter, keys): fighter.vel[0] = 0
     def handle_input(self, fighter, keys):
         if fighter.is_ko: return
+        if getattr(fighter, 'stun_timer', 0) > 0: return  # Sersemletilmis, hareket edemiyor
         if keys[fighter.controls['kick']]: fighter.change_state(KickState())
         elif keys[fighter.controls['punch']]: fighter.change_state(PunchState())
         elif keys[fighter.controls['special']] and fighter.special_meter >= 100: fighter.change_state(SpecialState())
@@ -862,6 +890,12 @@ class Fighter:
         self.crit_chance = 0.15 if self.character_id == "Samurai" else 0.0
         self.dodge_chance = 0.10 if self.character_id == "Shinobi" else 0.0
         self.reflect_damage = 0.15 if "Satyr" in self.character_id else 0.0
+        # Wizard passives
+        self.burn_on_special = self.character_id == "Fire_Wizard"       # Ozel saldiri sonrasi yanma efekti
+        self.stun_on_special = self.character_id == "Lightning_Mage"     # Ozel saldiri sonrasi sersemletme
+        self.spell_amp = 0.20 if self.character_id == "Wanderer_Magician" else 0.0  # Ozel saldiri hasari %20 artis
+        self.burn_timer = 0   # Yanma suresi (kare sayisi)
+        self.stun_timer = 0   # Sersemletme suresi
         
         self.frames = assets.get_frames(self.character_id, self.current_anim)
         self.frame_index = 0; self.anim_speed = 0.2; self.loop_anim = True
@@ -906,6 +940,16 @@ class Fighter:
         if self.combo_timer > 0:
             self.combo_timer -= 1
             if self.combo_timer <= 0: self.combo_count = 0
+        
+        # Yanma hasari (Fire Wizard ozel etkisi)
+        if self.burn_timer > 0:
+            self.burn_timer -= 1
+            if self.burn_timer % 20 == 0:  # Her 20 karede bir hasar
+                self.take_damage(3)
+        
+        # Sersemletme (Lightning Mage ozel etkisi) - girdileri bloklar
+        if self.stun_timer > 0:
+            self.stun_timer -= 1
 
     def draw(self, surface, cam):
         cx, cy = int(self.pos[0] + cam[0]), int(self.pos[1] + cam[1])
@@ -1195,6 +1239,19 @@ class GameManager:
                         heal = damage * 0.3
                         attacker.health = min(MAX_HEALTH, attacker.health + heal)
                         self.particles.emit_text(attacker.pos[0], attacker.pos[1]-145, f"+{int(heal)} HP", (50, 255, 50))
+                    
+                    # Wizard ozel etkiler (sadece Special saldirida)
+                    if isinstance(attacker.state, SpecialState):
+                        if attacker.burn_on_special:
+                            defender.burn_timer = 120  # 2 saniye yanma
+                            self.particles.emit_text(defender.pos[0], defender.pos[1]-160, "YANMA!", (255, 80, 0))
+                        if attacker.stun_on_special:
+                            defender.stun_timer = 40  # ~0.6 saniye sersemletme
+                            self.particles.emit_text(defender.pos[0], defender.pos[1]-160, "SERSEM!", (150, 180, 255))
+                        if attacker.spell_amp > 0:
+                            bonus = damage * attacker.spell_amp
+                            defender.take_damage(bonus)
+                            self.particles.emit_text(attacker.pos[0], attacker.pos[1]-170, "BUYULU!", (180, 100, 255))
                     
                     sounds.play("hit")
                     defender.change_state(HitStunState())
