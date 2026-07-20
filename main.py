@@ -1146,6 +1146,8 @@ class GameManager:
 
     def check_collisions(self):
         for attacker, defender in [(self.p1, self.p2), (self.p2, self.p1)]:
+            if defender.is_ko or defender.health <= 0:
+                continue
             if attacker.hitbox and attacker.hitbox.colliderect(defender.hurtbox) and not attacker.hit_connected:
                 # Dodge check
                 if random.random() < defender.dodge_chance and not isinstance(defender.state, BlockState):
