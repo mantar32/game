@@ -825,7 +825,7 @@ class HitStunState(State):
 
 class KOState(State):
     def enter(self, fighter):
-        fighter.set_anim("KO", loop=False); fighter.vel[1] = -11; fighter.vel[0] = -fighter.facing * 8; fighter.hitbox = None
+        fighter.set_anim("KO", loop=False); fighter.vel[1] = -3; fighter.vel[0] = -fighter.facing * 3; fighter.hitbox = None
     def update(self, fighter, keys):
         if fighter.pos[1] >= GROUND_Y:
             fighter.vel[0] *= 0.75
