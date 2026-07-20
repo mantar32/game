@@ -625,9 +625,17 @@ class SpriteManager:
         num_frames = sheet.get_width() // frame_w
         frames = []
         target_scale = SPRITE_SCALE * (128 / frame_h)
+        is_dead = (anim_file == "Dead.png")
         for i in range(max(1, num_frames)):
             frame = sheet.subsurface(pygame.Rect(i * frame_w, 0, frame_w, frame_h))
             frame = pygame.transform.scale(frame, (int(frame_w * target_scale), int(frame_h * target_scale)))
+            if is_dead:
+                # Görünür piksel alanını hesapla ve frame'i crop et
+                bbox = frame.get_bounding_rect()
+                if bbox.width > 0 and bbox.height > 0:
+                    cropped = pygame.Surface((bbox.width, bbox.height), pygame.SRCALPHA)
+                    cropped.blit(frame, (0, 0), bbox)
+                    frame = cropped
             frames.append(frame)
         return frames
 
@@ -825,11 +833,12 @@ class HitStunState(State):
 
 class KOState(State):
     def enter(self, fighter):
-        fighter.set_anim("KO", loop=False); fighter.vel[1] = -3; fighter.vel[0] = -fighter.facing * 3; fighter.hitbox = None
+        fighter.set_anim("KO", loop=False)
+        fighter.vel[1] = 0
+        fighter.vel[0] = 0
+        fighter.hitbox = None
     def update(self, fighter, keys):
-        if fighter.pos[1] >= GROUND_Y:
-            fighter.vel[0] *= 0.75
-            if abs(fighter.vel[0]) < 0.5: fighter.vel[0] = 0
+        pass  # Karakter yerde hareketsiz duruyor
 
 # --- Fighter ---
 class Fighter:
@@ -904,12 +913,7 @@ class Fighter:
         if len(self.frames) > 0:
             img = self.frames[int(self.frame_index)]
             if self.facing == -1: img = pygame.transform.flip(img, True, False)
-            if self.current_anim == "KO":
-                bbox = img.get_bounding_rect()
-                empty_bottom = img.get_height() - bbox.bottom
-                img_rect = img.get_rect(midbottom=(cx, cy + 12 + empty_bottom))
-            else:
-                img_rect = img.get_rect(midbottom=(cx, cy + 12))
+            img_rect = img.get_rect(midbottom=(cx, cy + 12))
             surface.blit(img, img_rect)
 
 # --- AI Controller ---
