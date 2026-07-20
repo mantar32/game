@@ -904,7 +904,12 @@ class Fighter:
         if len(self.frames) > 0:
             img = self.frames[int(self.frame_index)]
             if self.facing == -1: img = pygame.transform.flip(img, True, False)
-            img_rect = img.get_rect(midbottom=(cx, cy + 12))
+            if self.current_anim == "KO":
+                bbox = img.get_bounding_rect()
+                empty_bottom = img.get_height() - bbox.bottom
+                img_rect = img.get_rect(midbottom=(cx, cy + 12 + empty_bottom))
+            else:
+                img_rect = img.get_rect(midbottom=(cx, cy + 12))
             surface.blit(img, img_rect)
 
 # --- AI Controller ---
