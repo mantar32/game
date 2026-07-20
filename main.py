@@ -964,7 +964,7 @@ class GameManager:
         self.ctrl_p2 = {'up': pygame.K_UP, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'punch': pygame.K_KP1, 'kick': pygame.K_KP2, 'special': pygame.K_KP3, 'block': pygame.K_KP0}
 
     def update_finish_animations(self):
-        no_keys = EmptyKeys()
+        no_keys = _DictKeys({})
         for fighter in (getattr(self, "p1", None), getattr(self, "p2", None)):
             if fighter and (fighter.is_ko or fighter.health <= 0):
                 if not isinstance(fighter.state, KOState):
