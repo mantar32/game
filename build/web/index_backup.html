@@ -1,4 +1,6 @@
-<html lang="en-us"><script src="./cdn/0.9.3/pythons.js" type=module id="site" data-python="python3.12" data-LINES=42 data-COLUMNS=132 data-os="snd,gui" async defer>#<!--
+<html lang="en-us">
+<script src="./cdn/0.9.3/pythons.js" type=module id="site" data-python="python3.12" data-LINES=42 data-COLUMNS=132
+    data-os="snd,gui" async defer>#<!--
 
 print("""
 Loading dovus_web from dovus_web.apk
@@ -23,7 +25,7 @@ from pathlib import Path
 # do not rename
 async def custom_site():
     import embed
-    platform.document.body.style.background = "#0d1b2a"
+    platform.document.body.style.background = "#05060f"
 
     platform.window.transfer.hidden = true
     platform.window.canvas.style.visibility = "visible"
@@ -107,7 +109,9 @@ asyncio.run( custom_site() )
 #
 # do not alter that comment block it is separating python code from html code
 # =============================================================================
-# --></script><head><!--
+# --></script>
+
+<head><!--
 //=============================================================================
 //
 //
@@ -121,802 +125,814 @@ asyncio.run( custom_site() )
 {{cookiecutter.comment}}
     {% endif %}
 
---><script type="application/javascript">
-// END BLOCK
+-->
+    <script type="application/javascript">
+        // END BLOCK
 
 
 
-// this dict is available under PyConfig.config from __main__
+        // this dict is available under PyConfig.config from __main__
 
-config = {
-    xtermjs : "0" ,
-    _sdl2 : "canvas",
-    user_canvas : 0,
-    user_canvas_managed : 0,
-    gui_divider : 2,
-    ume_block : 0,
-    can_close : 0,
-    archive : "dovus_web",
-    gui_debug : 0,
-    cdn : "./cdn/0.9.3/",
-    autorun : 0,
-    PYBUILD : "3.12",
-    fb_ar   :  1.7067,
-    fb_width : "1024",
-    fb_height : "600"
-}
+        config = {
+            xtermjs: "0",
+            _sdl2: "canvas",
+            user_canvas: 0,
+            user_canvas_managed: 0,
+            gui_divider: 2,
+            ume_block: 0,
+            can_close: 0,
+            archive: "dovus_web",
+            gui_debug: 0,
+            cdn: "./cdn/0.9.3/",
+            autorun: 0,
+            PYBUILD: "3.12",
+            fb_ar: 1.7067,
+            fb_width: "1024",
+            fb_height: "600"
+        }
 
-function setLoadingMessage(message) {
-    const loadingText = document.getElementById("loading-text");
-    if (loadingText) {
-        loadingText.textContent = message || "Oyun hazirlaniyor";
-    } else if (globalThis.infobox) {
-        infobox.textContent = message || "Oyun hazirlaniyor";
-    }
-}
-
-function show_infobox() {
-    infobox.style.display = "flex";
-}
-
-function force_fullscreen_canvas() {
-    document.documentElement.style.setProperty("background", "#0d1b2a", "important");
-    document.body.style.setProperty("background", "#0d1b2a", "important");
-    document.body.style.setProperty("margin", "0", "important");
-    document.body.style.setProperty("padding", "0", "important");
-    document.body.style.setProperty("overflow", "hidden", "important");
-    for (const id of ["canvas", "canvas3d"]) {
-        const canvas = document.getElementById(id);
-        if (!canvas) continue;
-        canvas.width = 1024;
-        canvas.height = 600;
-        canvas.style.setProperty("position", "fixed", "important");
-        canvas.style.setProperty("inset", "0", "important");
-        canvas.style.setProperty("left", "0", "important");
-        canvas.style.setProperty("top", "0", "important");
-        canvas.style.setProperty("right", "0", "important");
-        canvas.style.setProperty("bottom", "0", "important");
-        canvas.style.setProperty("width", "100vw", "important");
-        canvas.style.setProperty("height", "100vh", "important");
-        canvas.style.setProperty("width", "100dvw", "important");
-        canvas.style.setProperty("height", "100dvh", "important");
-        canvas.style.setProperty("max-width", "none", "important");
-        canvas.style.setProperty("max-height", "none", "important");
-        canvas.style.setProperty("min-width", "100vw", "important");
-        canvas.style.setProperty("min-height", "100vh", "important");
-        canvas.style.setProperty("margin", "0", "important");
-        canvas.style.setProperty("padding", "0", "important");
-        canvas.style.setProperty("transform", "none", "important");
-        canvas.style.setProperty("object-fit", "fill", "important");
-    }
-}
-
-function fit_game_canvas() {
-    const width = Math.max(1, Math.floor(window.visualViewport?.width || window.innerWidth || 1024));
-    const height = Math.max(1, Math.floor(window.visualViewport?.height || window.innerHeight || 600));
-    for (const id of ["canvas", "canvas3d"]) {
-        const canvas = document.getElementById(id);
-        if (!canvas) continue;
-        canvas.width = 1024;
-        canvas.height = 600;
-        canvas.style.width = "100dvw";
-        canvas.style.height = "100dvh";
-    }
-    if (globalThis.python?.config) {
-        globalThis.python.config.fb_width = String(width);
-        globalThis.python.config.fb_height = String(height);
-        globalThis.python.config.fb_ar = width / height;
-    }
-    if (typeof window_resize === "function") {
-        window_resize();
-    }
-    force_fullscreen_canvas();
-    requestAnimationFrame(force_fullscreen_canvas);
-}
-
-window.addEventListener("resize", fit_game_canvas);
-window.visualViewport?.addEventListener("resize", fit_game_canvas);
-window.addEventListener("orientationchange", () => setTimeout(fit_game_canvas, 250));
-setInterval(force_fullscreen_canvas, 500);
-
-const touchKeyMap = {
-    a: { key: "a", code: "KeyA", keyCode: 65 },
-    d: { key: "d", code: "KeyD", keyCode: 68 },
-    w: { key: "w", code: "KeyW", keyCode: 87 },
-    j: { key: "j", code: "KeyJ", keyCode: 74 },
-    k: { key: "k", code: "KeyK", keyCode: 75 },
-    l: { key: "l", code: "KeyL", keyCode: 76 },
-    u: { key: "u", code: "KeyU", keyCode: 85 },
-    enter: { key: "Enter", code: "Enter", keyCode: 13 },
-};
-
-const activeTouchKeys = new Set();
-const actionTouchKeys = new Set(["j", "k", "l", "u"]);
-globalThis.dovus_keys = globalThis.dovus_keys || Object.create(null);
-globalThis.dovus_start = false;
-globalThis.dovus_restart = false;
-globalThis.__dovus_keys = globalThis.__dovus_keys || Object.create(null);
-globalThis.__dovus_start = false;
-globalThis.__dovus_restart = false;
-globalThis.dovus_state = "MENU";
-globalThis.dovus_player_dead = false;
-globalThis.dovus_game_over = false;
-globalThis.dovus_p1_won = false;
-globalThis.dovus_p1_dead = false;
-globalThis.dovus_p2_dead = false;
-globalThis.dovus_restart_ready = false;
-globalThis.dovus_match_id = 0;
-globalThis.dovus_home = false;
-globalThis.__dovus_home = false;
-globalThis.dovus_character = globalThis.dovus_character || "Fighter";
-globalThis.dovus_difficulty = globalThis.dovus_difficulty || "Normal";
-globalThis.dovus_game_mode = globalThis.dovus_game_mode || "Hizli Mac";
-globalThis.dovus_arcade_won = false;
-
-const characterCatalog = {
-    Fighter: { label: "FIGHTER", role: "DENGELI", price: 0 },
-    Shinobi: { label: "SHINOBI", role: "HIZLI", price: 80 },
-    Samurai: { label: "SAMURAI", role: "GUCLU", price: 140 },
-    Gotoku: { label: "GOTOKU", role: "HAYALET", price: 180 },
-    Onre: { label: "ONRE", role: "UCUCU", price: 220 },
-    Yurei: { label: "YUREI", role: "EFSUNLU", price: 260 },
-    Converted_Vampire: { label: "VAMPIR", role: "DENGELI", price: 300 },
-    Countess_Vampire: { label: "KONTES", role: "BUYU", price: 340 },
-    Vampire_Girl: { label: "VAMP GIRL", role: "ATIK", price: 380 },
-    Satyr_1: { label: "SATYR I", role: "HIZLI", price: 420 },
-    Satyr_2: { label: "SATYR II", role: "GUCLU", price: 460 },
-    Satyr_3: { label: "SATYR III", role: "BUYUCU", price: 500 },
-    Fire_Wizard: { label: "FIRE WIZ", role: "ATES", price: 540 },
-    Lightning_Mage: { label: "LGT MAGE", role: "SIMSEK", price: 580 },
-    Wanderer_Magician: { label: "WANDERER", role: "SIHIR", price: 620 },
-};
-const STARTING_COINS = 80;
-const WIN_REWARD = 20;
-const DEATH_PENALTY = 5;
-const storageKeys = {
-    coins: "dovus_coins",
-    unlocked: "dovus_unlocked",
-    rewardedMatch: "dovus_rewarded_match",
-};
-
-function readStoredNumber(key, fallback) {
-    try {
-        const value = Number(localStorage.getItem(key));
-        return Number.isFinite(value) ? value : fallback;
-    } catch {
-        return fallback;
-    }
-}
-
-function readUnlockedCharacters() {
-    try {
-        const stored = JSON.parse(localStorage.getItem(storageKeys.unlocked) || "[]");
-        const values = Array.isArray(stored) ? stored : [];
-        return Array.from(new Set(["Fighter", ...values.filter((name) => characterCatalog[name])]));
-    } catch {
-        return ["Fighter"];
-    }
-}
-
-globalThis.dovus_coins = readStoredNumber(storageKeys.coins, STARTING_COINS);
-globalThis.dovus_unlocked = readUnlockedCharacters();
-let lastSettledMatch = readStoredNumber(storageKeys.rewardedMatch, 0);
-
-// Stats tracking
-globalThis.dovus_stats = {
-    wins: readStoredNumber("dovus_stats_wins", 0),
-    losses: readStoredNumber("dovus_stats_losses", 0),
-};
-
-function readStoredObject(key, fallback) {
-    try {
-        const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : fallback;
-    } catch { return fallback; }
-}
-
-globalThis.dovus_badges = readStoredObject("dovus_badges", {});
-globalThis.dovus_quests = readStoredObject("dovus_quests", { date: new Date().toDateString(), wins: 0, claimed: false });
-
-if (globalThis.dovus_quests.date !== new Date().toDateString()) {
-    globalThis.dovus_quests = { date: new Date().toDateString(), wins: 0, claimed: false };
-}
-
-function saveEconomy() {
-    try {
-        localStorage.setItem(storageKeys.coins, String(globalThis.dovus_coins));
-        localStorage.setItem(storageKeys.unlocked, JSON.stringify(globalThis.dovus_unlocked));
-        localStorage.setItem(storageKeys.rewardedMatch, String(lastSettledMatch));
-        localStorage.setItem("dovus_stats_wins", String(globalThis.dovus_stats.wins));
-        localStorage.setItem("dovus_stats_losses", String(globalThis.dovus_stats.losses));
-        localStorage.setItem("dovus_badges", JSON.stringify(globalThis.dovus_badges));
-        localStorage.setItem("dovus_quests", JSON.stringify(globalThis.dovus_quests));
-    } catch {
-        // localStorage kapaliysa oyun yine calisir, sadece satin alma kalici olmaz.
-    }
-}
-
-function ownsCharacter(character) {
-    return globalThis.dovus_unlocked.includes(character);
-}
-
-function emitKeyboard(type, keyName) {
-    const spec = touchKeyMap[keyName];
-    if (!spec) return;
-    const event = new KeyboardEvent(type, {
-        key: spec.key,
-        code: spec.code,
-        bubbles: true,
-        cancelable: true,
-        repeat: false,
-    });
-    Object.defineProperty(event, "keyCode", { get: () => spec.keyCode });
-    Object.defineProperty(event, "which", { get: () => spec.keyCode });
-    const canvas = document.getElementById("canvas");
-    canvas?.focus();
-    canvas?.dispatchEvent(event);
-    document.dispatchEvent(event);
-    window.dispatchEvent(event);
-}
-
-function tapStartKey() {
-    globalThis.dovus_start = true;
-    globalThis.__dovus_start = true;
-    emitKeyboard("keydown", "enter");
-    emitKeyboard("keyup", "enter");
-}
-
-function setWalletMessage(message) {
-    const walletMessage = document.getElementById("wallet-message");
-    if (walletMessage) walletMessage.textContent = message || "";
-}
-
-function renderEconomyUI(message = "") {
-    const coinCount = document.getElementById("coin-count");
-    if (coinCount) coinCount.textContent = String(globalThis.dovus_coins);
-    
-    const statsText = document.getElementById("stats-text");
-    if (statsText) statsText.textContent = `(Galibiyet: ${globalThis.dovus_stats.wins} | Maglubiyet: ${globalThis.dovus_stats.losses})`;
-    
-    setWalletMessage(message);
-    document.querySelectorAll(".character-button").forEach((button) => {
-        const character = button.dataset.character;
-        const catalog = characterCatalog[character];
-        if (!catalog) return;
-        const owned = ownsCharacter(character);
-        const selected = globalThis.dovus_character === character;
-        button.classList.toggle("is-selected", selected);
-        button.classList.toggle("is-locked", !owned);
-        button.setAttribute("aria-pressed", selected ? "true" : "false");
-        const small = button.querySelector("small");
-        if (small) small.textContent = owned ? catalog.role : `${catalog.price} COIN`;
-    });
-}
-
-function settleMatchEconomy() {
-    const matchId = Number(globalThis.dovus_match_id || 0);
-    if (
-        globalThis.dovus_state === "GAME_OVER" &&
-        matchId > 0 &&
-        matchId !== lastSettledMatch
-    ) {
-        let message = "";
-        
-        if (globalThis.dovus_arcade_won) {
-            globalThis.dovus_coins += 100;
-            globalThis.dovus_stats.wins += 1;
-            message = `ARCADE TAMAMLANDI! +100 coin`;
-            globalThis.dovus_arcade_won = false;
-            
-            if (!globalThis.dovus_badges["ArcadeMaster"]) {
-                globalThis.dovus_badges["ArcadeMaster"] = true;
-                message += " [Yeni Rozet!]";
+        function setLoadingMessage(message) {
+            const loadingText = document.getElementById("loading-text");
+            if (loadingText) {
+                loadingText.textContent = message || "Oyun hazirlaniyor";
+            } else if (globalThis.infobox) {
+                infobox.textContent = message || "Oyun hazirlaniyor";
             }
         }
-        else if (globalThis.dovus_p1_won) {
-            let reward = WIN_REWARD;
-            if (globalThis.dovus_difficulty === "Zor") reward += 10;
-            globalThis.dovus_coins += reward;
-            globalThis.dovus_stats.wins += 1;
-            globalThis.dovus_quests.wins += 1;
-            
-            message = `Round kazandin: +${reward} coin`;
-            
-            if (!globalThis.dovus_badges["FirstBlood"]) {
-                globalThis.dovus_badges["FirstBlood"] = true;
-                message += " [Rozet: Ilk Kan!]";
-            }
-            if (globalThis.dovus_stats.wins >= 10 && !globalThis.dovus_badges["Veteran"]) {
-                globalThis.dovus_badges["Veteran"] = true;
-                message += " [Rozet: Veteran!]";
-            }
-            if (globalThis.dovus_quests.wins >= 3 && !globalThis.dovus_quests.claimed) {
-                globalThis.dovus_coins += 50;
-                globalThis.dovus_quests.claimed = true;
-                message += " [Gunluk Gorev: +50 Coin!]";
-            }
-            
-        } else if (globalThis.dovus_p1_dead) {
-            if (globalThis.dovus_game_mode !== "Antrenman") {
-                globalThis.dovus_coins = Math.max(0, globalThis.dovus_coins - DEATH_PENALTY);
-                globalThis.dovus_stats.losses += 1;
-                message = `Oldun: -${DEATH_PENALTY} coin`;
+
+        function show_infobox() {
+            infobox.style.display = "flex";
+        }
+
+        function force_fullscreen_canvas() {
+            document.documentElement.style.setProperty("background", "#05060f", "important");
+            document.body.style.setProperty("background", "#05060f", "important");
+            document.body.style.setProperty("margin", "0", "important");
+            document.body.style.setProperty("padding", "0", "important");
+            document.body.style.setProperty("overflow", "hidden", "important");
+            for (const id of ["canvas", "canvas3d"]) {
+                const canvas = document.getElementById(id);
+                if (!canvas) continue;
+                canvas.width = 1024;
+                canvas.height = 600;
+                canvas.style.setProperty("position", "fixed", "important");
+                canvas.style.setProperty("inset", "0", "important");
+                canvas.style.setProperty("left", "0", "important");
+                canvas.style.setProperty("top", "0", "important");
+                canvas.style.setProperty("right", "0", "important");
+                canvas.style.setProperty("bottom", "0", "important");
+                canvas.style.setProperty("width", "100vw", "important");
+                canvas.style.setProperty("height", "100vh", "important");
+                canvas.style.setProperty("width", "100dvw", "important");
+                canvas.style.setProperty("height", "100dvh", "important");
+                canvas.style.setProperty("max-width", "none", "important");
+                canvas.style.setProperty("max-height", "none", "important");
+                canvas.style.setProperty("min-width", "100vw", "important");
+                canvas.style.setProperty("min-height", "100vh", "important");
+                canvas.style.setProperty("margin", "0", "important");
+                canvas.style.setProperty("padding", "0", "important");
+                canvas.style.setProperty("transform", "none", "important");
+                canvas.style.setProperty("object-fit", "fill", "important");
             }
         }
-        
-        lastSettledMatch = matchId;
-        saveEconomy();
-        renderEconomyUI(message);
-    }
-}
 
-function startFightFromButton() {
-    if (globalThis.dovus_state !== "MENU") return;
-    if (!ownsCharacter(globalThis.dovus_character)) {
-        globalThis.dovus_character = "Fighter";
-        renderEconomyUI("Kilitli karakter secilemez.");
-        return;
-    }
-    globalThis.dovus_start = true;
-    globalThis.__dovus_start = true;
-    globalThis.dovus_state = "STARTING";
-    const startButton = document.getElementById("start-button");
-    if (startButton) startButton.hidden = true;
-    const characterSelect = document.getElementById("character-select");
-    if (characterSelect) characterSelect.hidden = true;
-    tapStartKey();
-}
-
-function selectCharacter(character) {
-    const catalog = characterCatalog[character];
-    if (!catalog) return;
-    let message = "";
-    if (!ownsCharacter(character)) {
-        if (globalThis.dovus_coins < catalog.price) {
-            renderEconomyUI(`${catalog.label} icin ${catalog.price} coin lazim.`);
-            return;
+        function fit_game_canvas() {
+            const width = Math.max(1, Math.floor(window.visualViewport?.width || window.innerWidth || 1024));
+            const height = Math.max(1, Math.floor(window.visualViewport?.height || window.innerHeight || 600));
+            for (const id of ["canvas", "canvas3d"]) {
+                const canvas = document.getElementById(id);
+                if (!canvas) continue;
+                canvas.width = 1024;
+                canvas.height = 600;
+                canvas.style.width = "100dvw";
+                canvas.style.height = "100dvh";
+            }
+            if (globalThis.python?.config) {
+                globalThis.python.config.fb_width = String(width);
+                globalThis.python.config.fb_height = String(height);
+                globalThis.python.config.fb_ar = width / height;
+            }
+            if (typeof window_resize === "function") {
+                window_resize();
+            }
+            force_fullscreen_canvas();
+            requestAnimationFrame(force_fullscreen_canvas);
         }
-        const confirmBuy = window.confirm(`${catalog.label} karakterini ${catalog.price} coin karsiliginda satin almak istiyor musun?`);
-        if (!confirmBuy) return;
-        
-        globalThis.dovus_coins -= catalog.price;
-        globalThis.dovus_unlocked.push(character);
-        saveEconomy();
-        message = `${catalog.label} satin alindi.`;
-    }
-    globalThis.dovus_character = character;
-    renderEconomyUI(message);
-}
 
-function pressTouchKey(button) {
-    const keyName = button.dataset.key;
-    if (!keyName || activeTouchKeys.has(keyName)) return;
-    if (actionTouchKeys.has(keyName)) {
-        for (const otherKey of actionTouchKeys) {
-            if (otherKey === keyName) continue;
-            activeTouchKeys.delete(otherKey);
-            globalThis.dovus_keys[otherKey] = false;
-            globalThis.__dovus_keys[otherKey] = false;
-            document.querySelector(`.touch-button[data-key="${otherKey}"]`)?.classList.remove("is-down");
-            emitKeyboard("keyup", otherKey);
-        }
-    }
-    // tapStartKey kaldirildi - dovus sirasinda start tetiklememeli
-    activeTouchKeys.add(keyName);
-    globalThis.dovus_keys[keyName] = true;
-    globalThis.__dovus_keys[keyName] = true;
-    button.classList.add("is-down");
-    emitKeyboard("keydown", keyName);
-}
+        window.addEventListener("resize", fit_game_canvas);
+        window.visualViewport?.addEventListener("resize", fit_game_canvas);
+        window.addEventListener("orientationchange", () => setTimeout(fit_game_canvas, 250));
+        setInterval(force_fullscreen_canvas, 500);
 
-function releaseTouchKey(button) {
-    const keyName = button.dataset.key;
-    if (!keyName || !activeTouchKeys.has(keyName)) return;
-    activeTouchKeys.delete(keyName);
-    globalThis.dovus_keys[keyName] = false;
-    globalThis.__dovus_keys[keyName] = false;
-    button.classList.remove("is-down");
-    emitKeyboard("keyup", keyName);
-}
-
-function releaseAllTouchKeys() {
-    document.querySelectorAll(".touch-button.is-down").forEach(releaseTouchKey);
-    for (const keyName of Array.from(activeTouchKeys)) {
-        activeTouchKeys.delete(keyName);
-        globalThis.dovus_keys[keyName] = false;
-        globalThis.__dovus_keys[keyName] = false;
-        emitKeyboard("keyup", keyName);
-    }
-}
-
-function restartFight() {
-    globalThis.dovus_restart = true;
-    globalThis.__dovus_restart = true;
-    globalThis.dovus_state = "RESTARTING";
-    globalThis.dovus_restart_ready = false;
-    releaseAllTouchKeys();
-    updateRestartButton();
-}
-
-function goHome() {
-    globalThis.dovus_home = true;
-    globalThis.__dovus_home = true;
-    globalThis.dovus_state = "MENU";
-    globalThis.dovus_player_dead = false;
-    globalThis.dovus_game_over = false;
-    globalThis.dovus_p1_dead = false;
-    globalThis.dovus_p2_dead = false;
-    globalThis.dovus_restart_ready = false;
-    releaseAllTouchKeys();
-    renderEconomyUI();
-    updateRestartButton();
-}
-
-function updateRestartButton() {
-    settleMatchEconomy();
-    const isMenu = globalThis.dovus_state === "MENU";
-    const startButton = document.getElementById("start-button");
-    if (startButton) {
-        startButton.hidden = !isMenu;
-    }
-    const walletPanel = document.getElementById("wallet-panel");
-    if (walletPanel) {
-        walletPanel.hidden = !isMenu;
-    }
-    const settingsPanel = document.getElementById("game-settings-panel");
-    if (settingsPanel) {
-        settingsPanel.hidden = !isMenu;
-    }
-    const characterSelect = document.getElementById("character-select");
-    if (characterSelect) {
-        characterSelect.hidden = !isMenu;
-    }
-    const menuContainer = document.getElementById("menu-ui-container");
-    if (menuContainer) {
-        menuContainer.hidden = !isMenu;
-    }
-    const touchControls = document.getElementById("touch-controls");
-    if (touchControls) {
-        touchControls.hidden = globalThis.dovus_state !== "FIGHT";
-    }
-    const shouldShowEndActions = Boolean(
-        globalThis.dovus_restart_ready &&
-        (
-            globalThis.dovus_game_over ||
-            globalThis.dovus_player_dead ||
-            globalThis.dovus_p1_dead ||
-            globalThis.dovus_p2_dead ||
-            globalThis.dovus_state === "GAME_OVER" ||
-            globalThis.dovus_state === "ROUND_END"
-        )
-    );
-    const button = document.getElementById("restart-button");
-    if (button) {
-        button.hidden = !shouldShowEndActions;
-        button.style.display = shouldShowEndActions ? "block" : "";
-    }
-    const homeButton = document.getElementById("home-button");
-    if (homeButton) {
-        homeButton.hidden = !shouldShowEndActions;
-        homeButton.style.display = shouldShowEndActions ? "block" : "";
-    }
-}
-
-function setupTouchKeyboard() {
-    document.querySelectorAll(".touch-button").forEach((button) => {
-        button.addEventListener("pointerdown", (event) => {
-            event.preventDefault();
-            button.setPointerCapture?.(event.pointerId);
-            pressTouchKey(button);
-        });
-        button.addEventListener("pointerup", (event) => {
-            event.preventDefault();
-            releaseTouchKey(button);
-        });
-        button.addEventListener("pointercancel", (event) => {
-            event.preventDefault();
-            releaseTouchKey(button);
-        });
-        button.addEventListener("lostpointercapture", () => releaseTouchKey(button));
-        button.addEventListener("touchstart", (event) => {
-            event.preventDefault();
-            pressTouchKey(button);
-        }, { passive: false });
-        button.addEventListener("touchend", (event) => {
-            event.preventDefault();
-            releaseTouchKey(button);
-        }, { passive: false });
-        button.addEventListener("touchcancel", (event) => {
-            event.preventDefault();
-            releaseTouchKey(button);
-        }, { passive: false });
-        button.addEventListener("mousedown", (event) => {
-            event.preventDefault();
-            pressTouchKey(button);
-        });
-        button.addEventListener("mouseup", (event) => {
-            event.preventDefault();
-            releaseTouchKey(button);
-        });
-        button.addEventListener("mouseleave", () => releaseTouchKey(button));
-        button.addEventListener("contextmenu", (event) => event.preventDefault());
-    });
-    const restartButton = document.getElementById("restart-button");
-    restartButton?.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        restartFight();
-    });
-    restartButton?.addEventListener("touchstart", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        restartFight();
-    }, { passive: false });
-    restartButton?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        restartFight();
-    });
-    const homeButton = document.getElementById("home-button");
-    homeButton?.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        goHome();
-    });
-    homeButton?.addEventListener("touchstart", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        goHome();
-    }, { passive: false });
-    homeButton?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        goHome();
-    });
-    const startButton = document.getElementById("start-button");
-    startButton?.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        startFightFromButton();
-    });
-    startButton?.addEventListener("touchstart", (event) => {
-        event.preventDefault();
-        startFightFromButton();
-    }, { passive: false });
-    startButton?.addEventListener("click", (event) => {
-        event.preventDefault();
-        startFightFromButton();
-    });
-    document.querySelectorAll(".character-button").forEach((button) => {
-        const choose = (event) => {
-            event.preventDefault();
-            selectCharacter(button.dataset.character);
+        const touchKeyMap = {
+            a: { key: "a", code: "KeyA", keyCode: 65 },
+            d: { key: "d", code: "KeyD", keyCode: 68 },
+            w: { key: "w", code: "KeyW", keyCode: 87 },
+            j: { key: "j", code: "KeyJ", keyCode: 74 },
+            k: { key: "k", code: "KeyK", keyCode: 75 },
+            l: { key: "l", code: "KeyL", keyCode: 76 },
+            u: { key: "u", code: "KeyU", keyCode: 85 },
+            enter: { key: "Enter", code: "Enter", keyCode: 13 },
         };
-        button.addEventListener("pointerdown", choose);
-        button.addEventListener("touchstart", choose, { passive: false });
-        button.addEventListener("click", choose);
-    });
-    // --- Mode Toggle Buttons ---
-    document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach((btn) => {
-        if (btn.dataset.mode === globalThis.dovus_game_mode) {
-            document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-        }
-        const handler = (e) => {
-            e.preventDefault();
-            document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-            globalThis.dovus_game_mode = btn.dataset.mode;
+
+        const activeTouchKeys = new Set();
+        const actionTouchKeys = new Set(["j", "k", "l", "u"]);
+        globalThis.dovus_keys = globalThis.dovus_keys || Object.create(null);
+        globalThis.dovus_start = false;
+        globalThis.dovus_restart = false;
+        globalThis.__dovus_keys = globalThis.__dovus_keys || Object.create(null);
+        globalThis.__dovus_start = false;
+        globalThis.__dovus_restart = false;
+        globalThis.dovus_state = "MENU";
+        globalThis.dovus_player_dead = false;
+        globalThis.dovus_game_over = false;
+        globalThis.dovus_p1_won = false;
+        globalThis.dovus_p1_dead = false;
+        globalThis.dovus_p2_dead = false;
+        globalThis.dovus_restart_ready = false;
+        globalThis.dovus_match_id = 0;
+        globalThis.dovus_home = false;
+        globalThis.__dovus_home = false;
+        globalThis.dovus_character = globalThis.dovus_character || "Fighter";
+        globalThis.dovus_difficulty = globalThis.dovus_difficulty || "Normal";
+        globalThis.dovus_game_mode = globalThis.dovus_game_mode || "Hizli Mac";
+        globalThis.dovus_arcade_won = false;
+
+        const characterCatalog = {
+            Fighter: { label: "FIGHTER", role: "DENGELI", price: 0 },
+            Shinobi: { label: "SHINOBI", role: "HIZLI", price: 80 },
+            Samurai: { label: "SAMURAI", role: "GUCLU", price: 140 },
+            Gotoku: { label: "GOTOKU", role: "HAYALET", price: 180 },
+            Onre: { label: "ONRE", role: "UCUCU", price: 220 },
+            Yurei: { label: "YUREI", role: "EFSUNLU", price: 260 },
+            Converted_Vampire: { label: "VAMPIR", role: "DENGELI", price: 300 },
+            Countess_Vampire: { label: "KONTES", role: "BUYU", price: 340 },
+            Vampire_Girl: { label: "VAMP GIRL", role: "ATIK", price: 380 },
+            Satyr_1: { label: "SATYR I", role: "HIZLI", price: 420 },
+            Satyr_2: { label: "SATYR II", role: "GUCLU", price: 460 },
+            Satyr_3: { label: "SATYR III", role: "BUYUCU", price: 500 },
+            Fire_Wizard: { label: "FIRE WIZ", role: "ATES", price: 540 },
+            Lightning_Mage: { label: "LGT MAGE", role: "SIMSEK", price: 580 },
+            Wanderer_Magician: { label: "WANDERER", role: "SIHIR", price: 620 },
         };
-        btn.addEventListener("pointerdown", handler);
-        btn.addEventListener("touchstart", handler, { passive: false });
-    });
-
-    // --- Difficulty Toggle Buttons ---
-    document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach((btn) => {
-        if (btn.dataset.diff === globalThis.dovus_difficulty) {
-            document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-        }
-        const handler = (e) => {
-            e.preventDefault();
-            document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-            globalThis.dovus_difficulty = btn.dataset.diff;
+        const STARTING_COINS = 80;
+        const WIN_REWARD = 20;
+        const DEATH_PENALTY = 5;
+        const storageKeys = {
+            coins: "dovus_coins",
+            unlocked: "dovus_unlocked",
+            rewardedMatch: "dovus_rewarded_match",
         };
-        btn.addEventListener("pointerdown", handler);
-        btn.addEventListener("touchstart", handler, { passive: false });
-    });
-    
-    document.getElementById("btn-achievements")?.addEventListener("click", (e) => {
-        e.preventDefault();
-        let html = "<h3>Gunluk Gorev</h3>";
-        html += `<p>3 Mac Kazan: ${globalThis.dovus_quests.wins}/3 ${globalThis.dovus_quests.claimed ? '(Tamamlandi)' : ''}</p>`;
-        html += "<h3>Kazanilan Rozetler</h3><ul>";
-        for (let b in globalThis.dovus_badges) {
-            html += `<li>${b}</li>`;
+
+        function readStoredNumber(key, fallback) {
+            try {
+                const value = Number(localStorage.getItem(key));
+                return Number.isFinite(value) ? value : fallback;
+            } catch {
+                return fallback;
+            }
         }
-        if (Object.keys(globalThis.dovus_badges).length === 0) html += "<li>Henuz rozet yok.</li>";
-        html += "</ul><button onclick='document.getElementById(\"achievements-modal\").hidden=true'>Kapat</button>";
-        document.getElementById("achievements-content").innerHTML = html;
-        document.getElementById("achievements-modal").hidden = false;
-    });
 
-    if (!ownsCharacter(globalThis.dovus_character)) {
-        globalThis.dovus_character = "Fighter";
-    }
-    renderEconomyUI();
-    updateRestartButton();
-}
+        function readUnlockedCharacters() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(storageKeys.unlocked) || "[]");
+                const values = Array.isArray(stored) ? stored : [];
+                return Array.from(new Set(["Fighter", ...values.filter((name) => characterCatalog[name])]));
+            } catch {
+                return ["Fighter"];
+            }
+        }
 
-globalThis.dovus_network = {
-    mode: "OFFLINE",
-    peer: null,
-    conn: null,
-    roomId: "",
-    username: "Oyuncu",
-    remoteUsername: "Rakip",
-    inState: null,
-    outState: null,
-    remoteKeys: []
-};
+        globalThis.dovus_coins = readStoredNumber(storageKeys.coins, STARTING_COINS);
+        globalThis.dovus_unlocked = readUnlockedCharacters();
+        let lastSettledMatch = readStoredNumber(storageKeys.rewardedMatch, 0);
 
-function initMultiplayer() {
-    const statusDiv = document.getElementById("multiplayer-status");
-    const btnCreate = document.getElementById("btn-create-room");
-    const btnJoin = document.getElementById("btn-join-room");
-    const inputRoom = document.getElementById("room-id-input");
-    const inputUser = document.getElementById("username-input");
-    
-    if (!statusDiv) return;
+        // Stats tracking
+        globalThis.dovus_stats = {
+            wins: readStoredNumber("dovus_stats_wins", 0),
+            losses: readStoredNumber("dovus_stats_losses", 0),
+        };
 
-    inputUser.value = localStorage.getItem("dovus_username") || "Oyuncu_" + Math.floor(Math.random()*1000);
-    globalThis.dovus_network.username = inputUser.value;
+        function readStoredObject(key, fallback) {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : fallback;
+            } catch { return fallback; }
+        }
 
-    inputUser.addEventListener("change", () => {
-        localStorage.setItem("dovus_username", inputUser.value);
-        globalThis.dovus_network.username = inputUser.value;
-    });
+        globalThis.dovus_badges = readStoredObject("dovus_badges", {});
+        globalThis.dovus_quests = readStoredObject("dovus_quests", { date: new Date().toDateString(), wins: 0, claimed: false });
 
-    // Tuşların Pygame'e gidip oyunu başlatmasını engelle
-    globalThis.dovus_input_focused = false;
-    [inputUser, inputRoom].forEach(inp => {
-        inp.addEventListener("focus", () => { globalThis.dovus_input_focused = true; });
-        inp.addEventListener("blur", () => { globalThis.dovus_input_focused = false; });
-        ['keydown', 'keyup', 'keypress'].forEach(evt => {
-            inp.addEventListener(evt, (e) => e.stopPropagation());
-        });
-    });
+        if (globalThis.dovus_quests.date !== new Date().toDateString()) {
+            globalThis.dovus_quests = { date: new Date().toDateString(), wins: 0, claimed: false };
+        }
 
-    const setupConnection = (conn) => {
-        globalThis.dovus_network.conn = conn;
-        conn.on("open", () => {
-            statusDiv.textContent = "Bağlandı! Bekleniyor...";
-            statusDiv.style.color = "#0f0";
-            conn.send({ type: "hello", username: globalThis.dovus_network.username, character: globalThis.dovus_character });
-        });
-        conn.on("data", (data) => {
-            if (data.type === "hello") {
-                globalThis.dovus_network.remoteUsername = data.username;
-                statusDiv.textContent = `Rakip: ${data.username} (Hazır!)`;
-                // Host starts the game and tells client to start
-                if (globalThis.dovus_network.mode === "HOST") {
-                    startFightFromButton();
-                    conn.send({ type: "start_fight" });
+        function saveEconomy() {
+            try {
+                localStorage.setItem(storageKeys.coins, String(globalThis.dovus_coins));
+                localStorage.setItem(storageKeys.unlocked, JSON.stringify(globalThis.dovus_unlocked));
+                localStorage.setItem(storageKeys.rewardedMatch, String(lastSettledMatch));
+                localStorage.setItem("dovus_stats_wins", String(globalThis.dovus_stats.wins));
+                localStorage.setItem("dovus_stats_losses", String(globalThis.dovus_stats.losses));
+                localStorage.setItem("dovus_badges", JSON.stringify(globalThis.dovus_badges));
+                localStorage.setItem("dovus_quests", JSON.stringify(globalThis.dovus_quests));
+            } catch {
+                // localStorage kapaliysa oyun yine calisir, sadece satin alma kalici olmaz.
+            }
+        }
+
+        function ownsCharacter(character) {
+            return globalThis.dovus_unlocked.includes(character);
+        }
+
+        function emitKeyboard(type, keyName) {
+            const spec = touchKeyMap[keyName];
+            if (!spec) return;
+            const event = new KeyboardEvent(type, {
+                key: spec.key,
+                code: spec.code,
+                bubbles: true,
+                cancelable: true,
+                repeat: false,
+            });
+            Object.defineProperty(event, "keyCode", { get: () => spec.keyCode });
+            Object.defineProperty(event, "which", { get: () => spec.keyCode });
+            const canvas = document.getElementById("canvas");
+            canvas?.focus();
+            canvas?.dispatchEvent(event);
+            document.dispatchEvent(event);
+            window.dispatchEvent(event);
+        }
+
+        function tapStartKey() {
+            globalThis.dovus_start = true;
+            globalThis.__dovus_start = true;
+            emitKeyboard("keydown", "enter");
+            emitKeyboard("keyup", "enter");
+        }
+
+        function setWalletMessage(message) {
+            const walletMessage = document.getElementById("wallet-message");
+            if (walletMessage) walletMessage.textContent = message || "";
+        }
+
+        function renderEconomyUI(message = "") {
+            const coinCount = document.getElementById("coin-count");
+            if (coinCount) coinCount.textContent = String(globalThis.dovus_coins);
+
+            const statsText = document.getElementById("stats-text");
+            if (statsText) statsText.textContent = `(Galibiyet: ${globalThis.dovus_stats.wins} | Maglubiyet: ${globalThis.dovus_stats.losses})`;
+
+            setWalletMessage(message);
+            document.querySelectorAll(".character-button").forEach((button) => {
+                const character = button.dataset.character;
+                const catalog = characterCatalog[character];
+                if (!catalog) return;
+                const owned = ownsCharacter(character);
+                const selected = globalThis.dovus_character === character;
+                button.classList.toggle("is-selected", selected);
+                button.classList.toggle("is-locked", !owned);
+                button.setAttribute("aria-pressed", selected ? "true" : "false");
+                const small = button.querySelector("small");
+                if (small) small.textContent = owned ? catalog.role : `${catalog.price} COIN`;
+            });
+        }
+
+        function settleMatchEconomy() {
+            const matchId = Number(globalThis.dovus_match_id || 0);
+            if (
+                globalThis.dovus_state === "GAME_OVER" &&
+                matchId > 0 &&
+                matchId !== lastSettledMatch
+            ) {
+                let message = "";
+
+                if (globalThis.dovus_arcade_won) {
+                    globalThis.dovus_coins += 100;
+                    globalThis.dovus_stats.wins += 1;
+                    message = `ARCADE TAMAMLANDI! +100 coin`;
+                    globalThis.dovus_arcade_won = false;
+
+                    if (!globalThis.dovus_badges["ArcadeMaster"]) {
+                        globalThis.dovus_badges["ArcadeMaster"] = true;
+                        message += " [Yeni Rozet!]";
+                    }
                 }
-            } else if (data.type === "start_fight") {
+                else if (globalThis.dovus_p1_won) {
+                    let reward = WIN_REWARD;
+                    if (globalThis.dovus_difficulty === "Zor") reward += 10;
+                    globalThis.dovus_coins += reward;
+                    globalThis.dovus_stats.wins += 1;
+                    globalThis.dovus_quests.wins += 1;
+
+                    message = `Round kazandin: +${reward} coin`;
+
+                    if (!globalThis.dovus_badges["FirstBlood"]) {
+                        globalThis.dovus_badges["FirstBlood"] = true;
+                        message += " [Rozet: Ilk Kan!]";
+                    }
+                    if (globalThis.dovus_stats.wins >= 10 && !globalThis.dovus_badges["Veteran"]) {
+                        globalThis.dovus_badges["Veteran"] = true;
+                        message += " [Rozet: Veteran!]";
+                    }
+                    if (globalThis.dovus_quests.wins >= 3 && !globalThis.dovus_quests.claimed) {
+                        globalThis.dovus_coins += 50;
+                        globalThis.dovus_quests.claimed = true;
+                        message += " [Gunluk Gorev: +50 Coin!]";
+                    }
+
+                } else if (globalThis.dovus_p1_dead) {
+                    if (globalThis.dovus_game_mode !== "Antrenman") {
+                        globalThis.dovus_coins = Math.max(0, globalThis.dovus_coins - DEATH_PENALTY);
+                        globalThis.dovus_stats.losses += 1;
+                        message = `Oldun: -${DEATH_PENALTY} coin`;
+                    }
+                }
+
+                lastSettledMatch = matchId;
+                saveEconomy();
+                renderEconomyUI(message);
+            }
+        }
+
+        function startFightFromButton() {
+            if (globalThis.dovus_state !== "MENU") return;
+            if (!ownsCharacter(globalThis.dovus_character)) {
+                globalThis.dovus_character = "Fighter";
+                renderEconomyUI("Kilitli karakter secilemez.");
+                return;
+            }
+            globalThis.dovus_start = true;
+            globalThis.__dovus_start = true;
+            globalThis.dovus_state = "STARTING";
+            const startButton = document.getElementById("start-button");
+            if (startButton) startButton.hidden = true;
+            const characterSelect = document.getElementById("character-select");
+            if (characterSelect) characterSelect.hidden = true;
+            tapStartKey();
+        }
+
+        function selectCharacter(character) {
+            const catalog = characterCatalog[character];
+            if (!catalog) return;
+            let message = "";
+            if (!ownsCharacter(character)) {
+                if (globalThis.dovus_coins < catalog.price) {
+                    renderEconomyUI(`${catalog.label} icin ${catalog.price} coin lazim.`);
+                    return;
+                }
+                const confirmBuy = window.confirm(`${catalog.label} karakterini ${catalog.price} coin karsiliginda satin almak istiyor musun?`);
+                if (!confirmBuy) return;
+
+                globalThis.dovus_coins -= catalog.price;
+                globalThis.dovus_unlocked.push(character);
+                saveEconomy();
+                message = `${catalog.label} satin alindi.`;
+            }
+            globalThis.dovus_character = character;
+            renderEconomyUI(message);
+        }
+
+        function pressTouchKey(button) {
+            const keyName = button.dataset.key;
+            if (!keyName || activeTouchKeys.has(keyName)) return;
+            if (actionTouchKeys.has(keyName)) {
+                for (const otherKey of actionTouchKeys) {
+                    if (otherKey === keyName) continue;
+                    activeTouchKeys.delete(otherKey);
+                    globalThis.dovus_keys[otherKey] = false;
+                    globalThis.__dovus_keys[otherKey] = false;
+                    document.querySelector(`.touch-button[data-key="${otherKey}"]`)?.classList.remove("is-down");
+                    emitKeyboard("keyup", otherKey);
+                }
+            }
+            // tapStartKey kaldirildi - dovus sirasinda start tetiklememeli
+            activeTouchKeys.add(keyName);
+            globalThis.dovus_keys[keyName] = true;
+            globalThis.__dovus_keys[keyName] = true;
+            button.classList.add("is-down");
+            emitKeyboard("keydown", keyName);
+        }
+
+        function releaseTouchKey(button) {
+            const keyName = button.dataset.key;
+            if (!keyName || !activeTouchKeys.has(keyName)) return;
+            activeTouchKeys.delete(keyName);
+            globalThis.dovus_keys[keyName] = false;
+            globalThis.__dovus_keys[keyName] = false;
+            button.classList.remove("is-down");
+            emitKeyboard("keyup", keyName);
+        }
+
+        function releaseAllTouchKeys() {
+            document.querySelectorAll(".touch-button.is-down").forEach(releaseTouchKey);
+            for (const keyName of Array.from(activeTouchKeys)) {
+                activeTouchKeys.delete(keyName);
+                globalThis.dovus_keys[keyName] = false;
+                globalThis.__dovus_keys[keyName] = false;
+                emitKeyboard("keyup", keyName);
+            }
+        }
+
+        function restartFight() {
+            globalThis.dovus_restart = true;
+            globalThis.__dovus_restart = true;
+            globalThis.dovus_state = "RESTARTING";
+            globalThis.dovus_restart_ready = false;
+            releaseAllTouchKeys();
+            updateRestartButton();
+        }
+
+        function goHome() {
+            globalThis.dovus_home = true;
+            globalThis.__dovus_home = true;
+            globalThis.dovus_state = "MENU";
+            globalThis.dovus_player_dead = false;
+            globalThis.dovus_game_over = false;
+            globalThis.dovus_p1_dead = false;
+            globalThis.dovus_p2_dead = false;
+            globalThis.dovus_restart_ready = false;
+            releaseAllTouchKeys();
+            renderEconomyUI();
+            updateRestartButton();
+        }
+
+        function updateRestartButton() {
+            settleMatchEconomy();
+            const isMenu = globalThis.dovus_state === "MENU";
+            const startButton = document.getElementById("start-button");
+            if (startButton) {
+                startButton.hidden = !isMenu;
+            }
+            const walletPanel = document.getElementById("wallet-panel");
+            if (walletPanel) {
+                walletPanel.hidden = !isMenu;
+            }
+            const settingsPanel = document.getElementById("game-settings-panel");
+            if (settingsPanel) {
+                settingsPanel.hidden = !isMenu;
+            }
+            const characterSelect = document.getElementById("character-select");
+            if (characterSelect) {
+                characterSelect.hidden = !isMenu;
+            }
+            const menuContainer = document.getElementById("menu-ui-container");
+            if (menuContainer) {
+                menuContainer.hidden = !isMenu;
+            }
+            const touchControls = document.getElementById("touch-controls");
+            if (touchControls) {
+                touchControls.hidden = globalThis.dovus_state !== "FIGHT";
+            }
+            const shouldShowEndActions = Boolean(
+                globalThis.dovus_restart_ready &&
+                (
+                    globalThis.dovus_game_over ||
+                    globalThis.dovus_player_dead ||
+                    globalThis.dovus_p1_dead ||
+                    globalThis.dovus_p2_dead ||
+                    globalThis.dovus_state === "GAME_OVER" ||
+                    globalThis.dovus_state === "ROUND_END"
+                )
+            );
+            const button = document.getElementById("restart-button");
+            if (button) {
+                button.hidden = !shouldShowEndActions;
+                button.style.display = shouldShowEndActions ? "block" : "";
+            }
+            const homeButton = document.getElementById("home-button");
+            if (homeButton) {
+                homeButton.hidden = !shouldShowEndActions;
+                homeButton.style.display = shouldShowEndActions ? "block" : "";
+            }
+        }
+
+        function setupTouchKeyboard() {
+            document.querySelectorAll(".touch-button").forEach((button) => {
+                button.addEventListener("pointerdown", (event) => {
+                    event.preventDefault();
+                    button.setPointerCapture?.(event.pointerId);
+                    pressTouchKey(button);
+                });
+                button.addEventListener("pointerup", (event) => {
+                    event.preventDefault();
+                    releaseTouchKey(button);
+                });
+                button.addEventListener("pointercancel", (event) => {
+                    event.preventDefault();
+                    releaseTouchKey(button);
+                });
+                button.addEventListener("lostpointercapture", () => releaseTouchKey(button));
+                button.addEventListener("touchstart", (event) => {
+                    event.preventDefault();
+                    pressTouchKey(button);
+                }, { passive: false });
+                button.addEventListener("touchend", (event) => {
+                    event.preventDefault();
+                    releaseTouchKey(button);
+                }, { passive: false });
+                button.addEventListener("touchcancel", (event) => {
+                    event.preventDefault();
+                    releaseTouchKey(button);
+                }, { passive: false });
+                button.addEventListener("mousedown", (event) => {
+                    event.preventDefault();
+                    pressTouchKey(button);
+                });
+                button.addEventListener("mouseup", (event) => {
+                    event.preventDefault();
+                    releaseTouchKey(button);
+                });
+                button.addEventListener("mouseleave", () => releaseTouchKey(button));
+                button.addEventListener("contextmenu", (event) => event.preventDefault());
+            });
+            const restartButton = document.getElementById("restart-button");
+            restartButton?.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                restartFight();
+            });
+            restartButton?.addEventListener("touchstart", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                restartFight();
+            }, { passive: false });
+            restartButton?.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                restartFight();
+            });
+            const homeButton = document.getElementById("home-button");
+            homeButton?.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                goHome();
+            });
+            homeButton?.addEventListener("touchstart", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                goHome();
+            }, { passive: false });
+            homeButton?.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                goHome();
+            });
+            const startButton = document.getElementById("start-button");
+            startButton?.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
                 startFightFromButton();
-            } else if (data.type === "state") {
-                globalThis.dovus_network.inState = data.state;
-            } else if (data.type === "keys") {
-                globalThis.dovus_network.remoteKeys = data.keys;
-            }
-        });
-        conn.on("close", () => {
-            statusDiv.textContent = "Bağlantı koptu.";
-            statusDiv.style.color = "#f00";
-            globalThis.dovus_network.mode = "OFFLINE";
-        });
-        conn.on("error", (err) => {
-            statusDiv.textContent = "Oda Hatası: " + err;
-            statusDiv.style.color = "#f00";
-        });
-    };
+            });
+            startButton?.addEventListener("touchstart", (event) => {
+                event.preventDefault();
+                startFightFromButton();
+            }, { passive: false });
+            startButton?.addEventListener("click", (event) => {
+                event.preventDefault();
+                startFightFromButton();
+            });
+            document.querySelectorAll(".character-button").forEach((button) => {
+                const choose = (event) => {
+                    event.preventDefault();
+                    selectCharacter(button.dataset.character);
+                };
+                button.addEventListener("pointerdown", choose);
+                button.addEventListener("touchstart", choose, { passive: false });
+                button.addEventListener("click", choose);
+            });
+            // --- Mode Toggle Buttons ---
+            document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach((btn) => {
+                if (btn.dataset.mode === globalThis.dovus_game_mode) {
+                    document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+                    btn.classList.add("is-active");
+                }
+                const handler = (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll("#mode-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+                    btn.classList.add("is-active");
+                    globalThis.dovus_game_mode = btn.dataset.mode;
+                };
+                btn.addEventListener("pointerdown", handler);
+                btn.addEventListener("touchstart", handler, { passive: false });
+            });
 
-    btnCreate.addEventListener("click", () => {
-        statusDiv.textContent = "Oda kuruluyor...";
-        statusDiv.style.color = "#ffaa00";
-        const peerConfig = {
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            }
-        };
-        const shortId = "DV-" + Math.floor(10000 + Math.random() * 90000);
-        const peer = new Peer(shortId, peerConfig);
-        globalThis.dovus_network.peer = peer;
-        peer.on("open", (id) => {
-            globalThis.dovus_network.roomId = id;
-            inputRoom.value = id;
-            statusDiv.textContent = "Oda Kuruldu. Rakip bekleniyor...";
-            globalThis.dovus_network.mode = "HOST";
-        });
-        peer.on("connection", (conn) => {
-            setupConnection(conn);
-        });
-        peer.on("error", (err) => {
-            statusDiv.textContent = "Bağlantı Hatası: " + err.type;
-            statusDiv.style.color = "#f00";
-        });
-    });
+            // --- Difficulty Toggle Buttons ---
+            document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach((btn) => {
+                if (btn.dataset.diff === globalThis.dovus_difficulty) {
+                    document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+                    btn.classList.add("is-active");
+                }
+                const handler = (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll("#diff-toggle-group .toggle-btn").forEach(b => b.classList.remove("is-active"));
+                    btn.classList.add("is-active");
+                    globalThis.dovus_difficulty = btn.dataset.diff;
+                };
+                btn.addEventListener("pointerdown", handler);
+                btn.addEventListener("touchstart", handler, { passive: false });
+            });
 
-    btnJoin.addEventListener("click", () => {
-        let id = inputRoom.value.trim().toUpperCase();
-        if (!id) return;
-        if (!id.startsWith("DV-")) {
-            id = "DV-" + id.replace("DV-", "");
-            inputRoom.value = id;
+            document.getElementById("btn-achievements")?.addEventListener("click", (e) => {
+                e.preventDefault();
+                let html = "<h3>Gunluk Gorev</h3>";
+                html += `<p>3 Mac Kazan: ${globalThis.dovus_quests.wins}/3 ${globalThis.dovus_quests.claimed ? '(Tamamlandi)' : ''}</p>`;
+                html += "<h3>Kazanilan Rozetler</h3><ul>";
+                for (let b in globalThis.dovus_badges) {
+                    html += `<li>${b}</li>`;
+                }
+                if (Object.keys(globalThis.dovus_badges).length === 0) html += "<li>Henuz rozet yok.</li>";
+                html += "</ul><button onclick='document.getElementById(\"achievements-modal\").hidden=true'>Kapat</button>";
+                document.getElementById("achievements-content").innerHTML = html;
+                document.getElementById("achievements-modal").hidden = false;
+            });
+
+            if (!ownsCharacter(globalThis.dovus_character)) {
+                globalThis.dovus_character = "Fighter";
+            }
+            renderEconomyUI();
+            updateRestartButton();
         }
-        statusDiv.textContent = "Odaya bağlanılıyor...";
-        statusDiv.style.color = "#ffaa00";
-        const peerConfig = {
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            }
+
+        globalThis.dovus_network = {
+            mode: "OFFLINE",
+            peer: null,
+            conn: null,
+            roomId: "",
+            username: "Oyuncu",
+            remoteUsername: "Rakip",
+            inState: null,
+            outState: null,
+            remoteKeys: []
         };
-        const peer = new Peer(undefined, peerConfig);
-        globalThis.dovus_network.peer = peer;
-        peer.on("open", () => {
-            statusDiv.textContent = "Bağlantı aranıyor...";
-            globalThis.dovus_network.mode = "CLIENT";
-            const conn = peer.connect(id);
-            setupConnection(conn);
-        });
-        peer.on("error", (err) => {
-            statusDiv.textContent = "Bağlantı Hatası: " + err.type;
-            statusDiv.style.color = "#f00";
-        });
-    });
 
-    setInterval(() => {
-        const conn = globalThis.dovus_network.conn;
-        if (!conn || !conn.open) return;
-        if (globalThis.dovus_network.mode === "HOST" && globalThis.dovus_network.outState) {
-            conn.send({ type: "state", state: globalThis.dovus_network.outState });
-        } else if (globalThis.dovus_network.mode === "CLIENT") {
-            const activeKeys = Object.keys(globalThis.dovus_keys).filter(k => globalThis.dovus_keys[k]);
-            conn.send({ type: "keys", keys: activeKeys });
+        function initMultiplayer() {
+            const statusDiv = document.getElementById("multiplayer-status");
+            const btnCreate = document.getElementById("btn-create-room");
+            const btnJoin = document.getElementById("btn-join-room");
+            const inputRoom = document.getElementById("room-id-input");
+            const inputUser = document.getElementById("username-input");
+
+            if (!statusDiv) return;
+
+            inputUser.value = localStorage.getItem("dovus_username") || "Oyuncu_" + Math.floor(Math.random() * 1000);
+            globalThis.dovus_network.username = inputUser.value;
+
+            inputUser.addEventListener("change", () => {
+                localStorage.setItem("dovus_username", inputUser.value);
+                globalThis.dovus_network.username = inputUser.value;
+            });
+
+            // Tuşların Pygame'e gidip oyunu başlatmasını engelle
+            globalThis.dovus_input_focused = false;
+            [inputUser, inputRoom].forEach(inp => {
+                inp.addEventListener("focus", () => { globalThis.dovus_input_focused = true; });
+                inp.addEventListener("blur", () => { globalThis.dovus_input_focused = false; });
+                ['keydown', 'keyup', 'keypress'].forEach(evt => {
+                    inp.addEventListener(evt, (e) => e.stopPropagation());
+                });
+            });
+
+            const setupConnection = (conn) => {
+                globalThis.dovus_network.conn = conn;
+                conn.on("open", () => {
+                    statusDiv.textContent = "Bağlandı! Bekleniyor...";
+                    statusDiv.style.color = "#0f0";
+                    conn.send({ type: "hello", username: globalThis.dovus_network.username, character: globalThis.dovus_character });
+                });
+                conn.on("data", (data) => {
+                    if (data.type === "hello") {
+                        globalThis.dovus_network.remoteUsername = data.username;
+                        statusDiv.textContent = `Rakip: ${data.username} (Hazır!)`;
+                        // Host starts the game and tells client to start
+                        if (globalThis.dovus_network.mode === "HOST") {
+                            startFightFromButton();
+                            conn.send({ type: "start_fight" });
+                        }
+                    } else if (data.type === "start_fight") {
+                        startFightFromButton();
+                    } else if (data.type === "state") {
+                        globalThis.dovus_network.inState = data.state;
+                    } else if (data.type === "keys") {
+                        globalThis.dovus_network.remoteKeys = data.keys;
+                    }
+                });
+                conn.on("close", () => {
+                    statusDiv.textContent = "Bağlantı koptu.";
+                    statusDiv.style.color = "#f00";
+                    globalThis.dovus_network.mode = "OFFLINE";
+                });
+                conn.on("error", (err) => {
+                    statusDiv.textContent = "Oda Hatası: " + err;
+                    statusDiv.style.color = "#f00";
+                });
+            };
+
+            btnCreate.addEventListener("click", () => {
+                statusDiv.textContent = "Oda kuruluyor...";
+                statusDiv.style.color = "#ffaa00";
+                const peerConfig = {
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                };
+                const shortId = "DV-" + Math.floor(10000 + Math.random() * 90000);
+                const peer = new Peer(shortId, peerConfig);
+                globalThis.dovus_network.peer = peer;
+                peer.on("open", (id) => {
+                    globalThis.dovus_network.roomId = id;
+                    inputRoom.value = id;
+                    statusDiv.textContent = "Oda Kuruldu. Rakip bekleniyor...";
+                    globalThis.dovus_network.mode = "HOST";
+                });
+                peer.on("connection", (conn) => {
+                    setupConnection(conn);
+                });
+                peer.on("error", (err) => {
+                    statusDiv.textContent = "Bağlantı Hatası: " + err.type;
+                    statusDiv.style.color = "#f00";
+                });
+            });
+
+            btnJoin.addEventListener("click", () => {
+                let id = inputRoom.value.trim().toUpperCase();
+                if (!id) return;
+                if (!id.startsWith("DV-")) {
+                    id = "DV-" + id.replace("DV-", "");
+                    inputRoom.value = id;
+                }
+                statusDiv.textContent = "Odaya bağlanılıyor...";
+                statusDiv.style.color = "#ffaa00";
+                const peerConfig = {
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                };
+                const peer = new Peer(undefined, peerConfig);
+                globalThis.dovus_network.peer = peer;
+                peer.on("open", () => {
+                    statusDiv.textContent = "Bağlantı aranıyor...";
+                    globalThis.dovus_network.mode = "CLIENT";
+                    const conn = peer.connect(id);
+                    setupConnection(conn);
+                });
+                peer.on("error", (err) => {
+                    statusDiv.textContent = "Bağlantı Hatası: " + err.type;
+                    statusDiv.style.color = "#f00";
+                });
+            });
+
+            setInterval(() => {
+                const conn = globalThis.dovus_network.conn;
+                if (!conn || !conn.open) return;
+                if (globalThis.dovus_network.mode === "HOST" && globalThis.dovus_network.outState) {
+                    conn.send({ type: "state", state: globalThis.dovus_network.outState });
+                } else if (globalThis.dovus_network.mode === "CLIENT") {
+                    const activeKeys = Object.keys(globalThis.dovus_keys).filter(k => globalThis.dovus_keys[k]);
+                    conn.send({ type: "keys", keys: activeKeys });
+                }
+            }, 16); // ~60fps
         }
-    }, 16); // ~60fps
-}
 
-window.addEventListener("blur", releaseAllTouchKeys);
-document.addEventListener("visibilitychange", () => {
-    if (document.hidden) releaseAllTouchKeys();
-});
-window.addEventListener("DOMContentLoaded", () => {
-    setupTouchKeyboard();
-    initMultiplayer();
-});
-setInterval(updateRestartButton, 120);
+        window.addEventListener("blur", releaseAllTouchKeys);
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) releaseAllTouchKeys();
+        });
+        window.addEventListener("DOMContentLoaded", () => {
+            setupTouchKeyboard();
+            initMultiplayer();
+        });
+        setInterval(updateRestartButton, 120);
 
-</script>
+    </script>
 
     <title>dovus_web</title>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
 
 
     <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
 
     <style>
+        :root {
+            --dv-void: #05060f;
+            --dv-panel: rgba(8, 12, 24, 0.86);
+            --dv-cyan: #00f0ff;
+            --dv-magenta: #ff2e88;
+            --dv-violet: #8b3cff;
+            --dv-gold: #ffd700;
+            --dv-text: #eef4ff;
+        }
+
         #status {
             display: inline-block;
             vertical-align: top;
@@ -993,11 +1009,22 @@ setInterval(updateRestartButton, 120);
         }
 
         @keyframes loader-spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-        div.emscripten { text-align: center; }
-        div.emscripten_border { border: 1px solid black; }
-        div.thick_border { border: 4px solid black; }
+
+        div.emscripten {
+            text-align: center;
+        }
+
+        div.emscripten_border {
+            border: 1px solid black;
+        }
+
+        div.thick_border {
+            border: 4px solid black;
+        }
 
         /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
         /* average size of droid screen 470dp x 320dp  */
@@ -1085,10 +1112,21 @@ setInterval(updateRestartButton, 120);
             background: rgba(47, 94, 79, 0.78);
         }
 
-        .touch-button[data-key="j"] { background: rgba(205, 55, 55, 0.8); }
-        .touch-button[data-key="k"] { background: rgba(55, 155, 75, 0.8); }
-        .touch-button[data-key="l"] { background: rgba(68, 83, 190, 0.8); }
-        .touch-button[data-key="u"] { background: rgba(158, 105, 38, 0.82); }
+        .touch-button[data-key="j"] {
+            background: rgba(205, 55, 55, 0.8);
+        }
+
+        .touch-button[data-key="k"] {
+            background: rgba(55, 155, 75, 0.8);
+        }
+
+        .touch-button[data-key="l"] {
+            background: rgba(68, 83, 190, 0.8);
+        }
+
+        .touch-button[data-key="u"] {
+            background: rgba(158, 105, 38, 0.82);
+        }
 
         .touch-button.is-down {
             border-color: #ffd700;
@@ -1097,7 +1135,7 @@ setInterval(updateRestartButton, 120);
 
         #menu-ui-container {
             position: fixed;
-            top: 70px; 
+            top: 70px;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
@@ -1114,7 +1152,7 @@ setInterval(updateRestartButton, 120);
             padding-bottom: 20px;
         }
 
-        #menu-ui-container > * {
+        #menu-ui-container>* {
             pointer-events: auto;
             position: static !important;
             transform: none !important;
@@ -1124,12 +1162,74 @@ setInterval(updateRestartButton, 120);
             flex-shrink: 0;
         }
 
+        #game-title {
+            margin: 0 0 10px 0;
+            font-family: 'Orbitron', Arial, sans-serif;
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-align: center;
+            color: var(--dv-text);
+            text-transform: uppercase;
+            text-shadow:
+                0 0 6px rgba(0, 240, 255, 0.9),
+                0 0 18px rgba(0, 240, 255, 0.6),
+                0 0 36px rgba(139, 60, 255, 0.5),
+                0 3px 0 rgba(0, 0, 0, 0.6);
+            animation: dv-title-flicker 4.5s ease-in-out infinite;
+        }
+
+        @keyframes dv-title-flicker {
+
+            0%,
+            92%,
+            100% {
+                opacity: 1;
+            }
+
+            93% {
+                opacity: 0.7;
+            }
+
+            94% {
+                opacity: 1;
+            }
+
+            95% {
+                opacity: 0.55;
+            }
+
+            96% {
+                opacity: 1;
+            }
+        }
+
         #start-button {
             font-size: 24px;
             min-height: 64px;
             min-width: 280px;
             flex-shrink: 0;
-            margin-top: auto; /* Pushes button to bottom of container if there is space */
+            margin-top: auto;
+            /* Pushes button to bottom of container if there is space */
+            border: 2px solid rgba(0, 240, 255, 0.85);
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(0, 200, 220, 0.28), rgba(0, 60, 70, 0.55));
+            color: #fff;
+            font-family: 'Rajdhani', Arial, sans-serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 0 22px rgba(0, 240, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            touch-action: none;
+            cursor: pointer;
+            text-align: center;
+            line-height: 58px;
+            padding: 0 20px;
+            transition: box-shadow 0.2s ease, filter 0.2s ease;
+        }
+
+        #start-button:hover {
+            box-shadow: 0 0 32px rgba(0, 240, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         #restart-button {
@@ -1140,12 +1240,14 @@ setInterval(updateRestartButton, 120);
             z-index: 200;
             min-width: 230px;
             min-height: 58px;
-            border: 2px solid rgba(255, 215, 0, 0.95);
-            border-radius: 14px;
-            background: linear-gradient(180deg, rgba(33, 178, 83, 0.96), rgba(19, 126, 59, 0.96));
+            border: 2px solid rgba(0, 240, 255, 0.85);
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(0, 200, 220, 0.32), rgba(0, 50, 60, 0.62));
             color: #fff;
-            font: 800 20px/1 Arial, sans-serif;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+            font: 700 20px/1 'Rajdhani', Arial, sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 0 24px rgba(0, 240, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
             touch-action: none;
             cursor: pointer;
             text-align: center;
@@ -1161,26 +1263,14 @@ setInterval(updateRestartButton, 120);
             z-index: 200;
             min-width: 230px;
             min-height: 58px;
-            border: 2px solid rgba(255, 215, 0, 0.95);
-            border-radius: 14px;
-            background: linear-gradient(180deg, rgba(18, 95, 125, 0.92), rgba(15, 75, 100, 0.92));
+            border: 2px solid rgba(255, 46, 136, 0.85);
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(139, 60, 255, 0.32), rgba(60, 15, 60, 0.62));
             color: #fff;
-            font: 800 20px/1 Arial, sans-serif;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
-            touch-action: none;
-            cursor: pointer;
-            text-align: center;
-            line-height: 58px;
-            padding: 0 20px;
-        }
-
-        #start-button {
-            border: 2px solid rgba(255, 215, 0, 0.95);
-            border-radius: 14px;
-            background: linear-gradient(180deg, rgba(33, 178, 83, 0.96), rgba(19, 126, 59, 0.96));
-            color: #fff;
-            font: 800 20px/1 Arial, sans-serif;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+            font: 700 20px/1 'Rajdhani', Arial, sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 0 24px rgba(255, 46, 136, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
             touch-action: none;
             cursor: pointer;
             text-align: center;
@@ -1191,7 +1281,7 @@ setInterval(updateRestartButton, 120);
         #start-button:active,
         #restart-button:active,
         #home-button:active {
-            filter: brightness(1.2);
+            filter: brightness(1.25);
         }
 
         #character-select {
@@ -1203,15 +1293,16 @@ setInterval(updateRestartButton, 120);
             width: min(870px, calc(100vw - 24px));
             box-sizing: border-box;
             padding: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(0, 240, 255, 0.22);
             border-radius: 16px;
-            background: rgba(8, 16, 28, 0.82);
-            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+            background: rgba(6, 10, 20, 0.82);
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35), inset 0 0 30px rgba(0, 240, 255, 0.04);
             pointer-events: auto;
             touch-action: none;
-            margin-bottom: 20px; /* Space between characters and start button */
+            margin-bottom: 20px;
+            /* Space between characters and start button */
         }
-        
+
         #game-settings-panel {
             display: flex;
             flex-direction: column;
@@ -1219,9 +1310,9 @@ setInterval(updateRestartButton, 120);
             gap: 12px;
             padding: 18px 24px;
             border-radius: 16px;
-            background: rgba(8, 16, 28, 0.88);
-            border: 1px solid rgba(255, 215, 0, 0.25);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+            background: rgba(6, 10, 20, 0.88);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             width: min(420px, calc(100vw - 40px));
@@ -1256,7 +1347,8 @@ setInterval(updateRestartButton, 120);
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.04);
             color: rgba(255, 255, 255, 0.5);
-            font: 700 11px/1.2 Arial, sans-serif;
+            font: 700 12px/1.2 'Rajdhani', Arial, sans-serif;
+            letter-spacing: 0.3px;
             cursor: pointer;
             text-align: center;
             transition: all 0.25s ease;
@@ -1289,10 +1381,12 @@ setInterval(updateRestartButton, 120);
             background: linear-gradient(135deg, rgba(33, 150, 243, 0.5), rgba(33, 150, 243, 0.25));
             border-color: rgba(33, 150, 243, 0.6);
         }
+
         .toggle-btn[data-mode="Arcade"].is-active {
             background: linear-gradient(135deg, rgba(255, 152, 0, 0.5), rgba(255, 152, 0, 0.25));
             border-color: rgba(255, 152, 0, 0.6);
         }
+
         .toggle-btn[data-mode="Antrenman"].is-active {
             background: linear-gradient(135deg, rgba(156, 39, 176, 0.5), rgba(156, 39, 176, 0.25));
             border-color: rgba(156, 39, 176, 0.6);
@@ -1303,29 +1397,15 @@ setInterval(updateRestartButton, 120);
             background: linear-gradient(135deg, rgba(76, 175, 80, 0.55), rgba(76, 175, 80, 0.25));
             border-color: rgba(76, 175, 80, 0.7);
         }
+
         .toggle-btn[data-diff="Normal"].is-active {
             background: linear-gradient(135deg, rgba(255, 193, 7, 0.55), rgba(255, 193, 7, 0.25));
             border-color: rgba(255, 193, 7, 0.7);
         }
+
         .toggle-btn[data-diff="Zor"].is-active {
             background: linear-gradient(135deg, rgba(244, 67, 54, 0.55), rgba(244, 67, 54, 0.25));
             border-color: rgba(244, 67, 54, 0.7);
-        }
-
-        #wallet-panel {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 205;
-            background: rgba(15, 25, 42, 0.88);
-            border: 1px solid rgba(255, 215, 0, 0.4);
-            border-radius: 12px;
-            padding: 10px 15px;
-            color: #ffd700;
-            font: 700 14px/1.4 Arial, sans-serif;
-            text-align: right;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
         }
 
         #coin-count {
@@ -1341,10 +1421,10 @@ setInterval(updateRestartButton, 120);
         }
 
         #stats-text {
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.6);
             font-size: 10px;
         }
-        
+
         #btn-achievements {
             background: rgba(255, 215, 0, 0.15);
             color: #ffd700;
@@ -1368,16 +1448,16 @@ setInterval(updateRestartButton, 120);
             top: 50%;
             transform: translate(-50%, -50%);
             z-index: 999;
-            background: rgba(15, 25, 42, 0.95);
-            border: 2px solid #ffd700;
+            background: rgba(8, 12, 22, 0.96);
+            border: 2px solid var(--dv-gold);
             border-radius: 12px;
             color: #fff;
             padding: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.15);
             min-width: 300px;
             text-align: center;
         }
-        
+
         #btn-achievements {
             background: rgba(30, 40, 60, 0.9);
             color: #fff;
@@ -1391,17 +1471,22 @@ setInterval(updateRestartButton, 120);
 
         #wallet-panel {
             position: fixed;
-            left: 50%;
-            top: 46%;
-            transform: translateX(-50%);
-            z-index: 202;
-            min-width: 280px;
-            min-height: 30px;
+            top: 15px;
+            right: 15px;
+            z-index: 205;
+            min-width: 150px;
+            background: rgba(10, 14, 26, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            border-radius: 12px;
+            padding: 10px 14px;
             color: #fff;
             font: 800 15px/1 Arial, sans-serif;
-            text-align: center;
+            text-align: right;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
-            pointer-events: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(0, 240, 255, 0.12);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            pointer-events: auto;
         }
 
         #wallet-message {
@@ -1415,12 +1500,13 @@ setInterval(updateRestartButton, 120);
             position: relative;
             min-width: 86px;
             min-height: 78px;
-            border: 2px solid rgba(255, 255, 255, 0.62);
+            border: 2px solid rgba(0, 240, 255, 0.28);
             border-radius: 12px;
-            background: rgba(15, 25, 42, 0.88);
+            background: rgba(10, 15, 26, 0.9);
             color: #fff;
-            font: 800 11px/1 Arial, sans-serif;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            font: 800 11px/1 'Rajdhani', Arial, sans-serif;
+            letter-spacing: 0.5px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1429,6 +1515,7 @@ setInterval(updateRestartButton, 120);
             padding: 5px 5px 6px;
             overflow: hidden;
             touch-action: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         .character-portrait {
@@ -1453,13 +1540,14 @@ setInterval(updateRestartButton, 120);
         }
 
         .character-button.is-selected {
-            border-color: #ffd700;
-            background: rgba(188, 62, 48, 0.92);
+            border-color: var(--dv-magenta);
+            background: linear-gradient(160deg, rgba(255, 46, 136, 0.28), rgba(20, 8, 22, 0.92));
+            box-shadow: 0 0 18px rgba(255, 46, 136, 0.45), 0 6px 18px rgba(0, 0, 0, 0.32);
         }
 
         .character-button.is-locked {
-            border-color: rgba(255, 255, 255, 0.38);
-            background: rgba(22, 24, 32, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(14, 16, 24, 0.9);
             color: rgba(255, 255, 255, 0.72);
         }
 
@@ -1472,6 +1560,7 @@ setInterval(updateRestartButton, 120);
         }
 
         @media (max-width: 520px) {
+
             #start-button,
             #restart-button,
             #home-button {
@@ -1491,8 +1580,11 @@ setInterval(updateRestartButton, 120);
             }
 
             #wallet-panel {
-                top: 44%;
-                min-width: 240px;
+                top: 10px;
+                right: 10px;
+                min-width: 120px;
+                padding: 8px 10px;
+                font-size: 13px;
             }
 
             .character-button {
@@ -1594,7 +1686,7 @@ setInterval(updateRestartButton, 120);
             height: 100dvh;
             overflow: hidden;
             overscroll-behavior: none;
-            background-color: #0d1b2a !important;
+            background-color: #05060f !important;
         }
 
         body {
@@ -1610,17 +1702,17 @@ setInterval(updateRestartButton, 120);
             inset: 0;
             touch-action: none;
             overscroll-behavior: none;
-            background-color:#0d1b2a !important;
+            background-color: #05060f !important;
         }
 
-        .topright{
-           position:absolute;
-           top:0px;
-           right:0px;
+        .topright {
+            position: absolute;
+            top: 0px;
+            right: 0px;
         }
 
         .bottomright {
-            position:absolute;
+            position: absolute;
             top: 40%;
             right: 0px;
         }
@@ -1631,26 +1723,31 @@ setInterval(updateRestartButton, 120);
             justify-content: center;
         }
 
-        .trinfo{
-           position: relative;
-           right: 0px;
-           border: 1px solid black;
+        .trinfo {
+            position: relative;
+            right: 0px;
+            border: 1px solid black;
         }
 
-        .framed{
-           position: relative;
-           top: 150px;
-           right: 10px;
-           border: 1px solid black;
+        .framed {
+            position: relative;
+            top: 150px;
+            right: 10px;
+            border: 1px solid black;
         }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@600;700&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 </head>
 
 <body>
 
     <div id="transfer" align=center>
-<!--        <div class="spinner" id='spinner'></div> -->
+        <!--        <div class="spinner" id='spinner'></div> -->
         <div class="emscripten" id="status">Loading...</div>
         <div class="emscripten">
             <progress value="0" max="100" id="progress"></progress>
@@ -1659,16 +1756,12 @@ setInterval(updateRestartButton, 120);
 
 
 
-    <canvas class="emscripten" id="canvas"
-width="1024px"
-height="600px"
-    oncontextmenu="event.preventDefault()" tabindex=1>
+    <canvas class="emscripten" id="canvas" width="1024px" height="600px" oncontextmenu="event.preventDefault()"
+        tabindex=1>
     </canvas>
 
-    <canvas class="emscripten" id="canvas3d"
-width="1024px"
-height="600px"
-    oncontextmenu="event.preventDefault()" tabindex=1 hidden>
+    <canvas class="emscripten" id="canvas3d" width="1024px" height="600px" oncontextmenu="event.preventDefault()"
+        tabindex=1 hidden>
     </canvas>
 
     <div id="touch-controls" aria-hidden="true" hidden>
@@ -1683,7 +1776,7 @@ height="600px"
             <button class="touch-button" data-key="j" type="button">VUR</button>
             <button class="touch-button" data-key="k" type="button">TEKME</button>
         </div>
-        </div>
+    </div>
     </div>
     <div id="wallet-panel">
         <span style="color: #ffd700; font-size: 20px;">💰 <span id="coin-count">80</span></span> COIN
@@ -1697,55 +1790,99 @@ height="600px"
     </div>
 
     <div id="menu-ui-container" aria-hidden="true">
-        <h1 style="color: #ffd700; text-shadow: 2px 2px 4px #000; margin: 0 0 10px 0; font-family: Arial, sans-serif; font-size: 36px; font-weight: 900; letter-spacing: 3px; text-align: center; -webkit-text-stroke: 1px #000;">STREET FIGHTER PY</h1>
+        <h1 id="game-title">STREET FIGHTER PY</h1>
         <div id="game-settings-panel">
             <div class="settings-row">
                 <span class="settings-label">MOD</span>
                 <div class="toggle-group" id="mode-toggle-group">
-                    <button class="toggle-btn is-active" data-mode="Hizli Mac" type="button">⚔️ Hızlı<span class="toggle-sub">Tek Maç</span></button>
-                    <button class="toggle-btn" data-mode="Arcade" type="button">🏆 Arcade<span class="toggle-sub">6 Boss</span></button>
-                    <button class="toggle-btn" data-mode="Antrenman" type="button">🥋 Pratik<span class="toggle-sub">Serbest</span></button>
+                    <button class="toggle-btn is-active" data-mode="Hizli Mac" type="button">⚔️ Hızlı<span
+                            class="toggle-sub">Tek Maç</span></button>
+                    <button class="toggle-btn" data-mode="Arcade" type="button">🏆 Arcade<span class="toggle-sub">6
+                            Boss</span></button>
+                    <button class="toggle-btn" data-mode="Antrenman" type="button">🥋 Pratik<span
+                            class="toggle-sub">Serbest</span></button>
                 </div>
             </div>
             <div class="settings-row">
                 <span class="settings-label">ZORLUK</span>
                 <div class="toggle-group" id="diff-toggle-group">
-                    <button class="toggle-btn" data-diff="Kolay" type="button">😌 Kolay<span class="toggle-sub">Blok %20</span></button>
-                    <button class="toggle-btn is-active" data-diff="Normal" type="button">😐 Normal<span class="toggle-sub">Blok %45</span></button>
-                    <button class="toggle-btn" data-diff="Zor" type="button">😈 Zor<span class="toggle-sub">Blok %70</span></button>
+                    <button class="toggle-btn" data-diff="Kolay" type="button">😌 Kolay<span class="toggle-sub">Blok
+                            %20</span></button>
+                    <button class="toggle-btn is-active" data-diff="Normal" type="button">😐 Normal<span
+                            class="toggle-sub">Blok %45</span></button>
+                    <button class="toggle-btn" data-diff="Zor" type="button">😈 Zor<span class="toggle-sub">Blok
+                            %70</span></button>
                 </div>
             </div>
         </div>
-        <div id="multiplayer-panel" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 15px; background: rgba(20, 25, 35, 0.9); border: 2px solid rgba(100, 200, 255, 0.4); border-radius: 12px; box-shadow: 0 14px 36px rgba(0,0,0,0.28); margin-bottom: 10px; width: 100%; max-width: 400px; box-sizing: border-box;">
+        <div id="multiplayer-panel"
+            style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 15px; background: rgba(20, 25, 35, 0.9); border: 2px solid rgba(100, 200, 255, 0.4); border-radius: 12px; box-shadow: 0 14px 36px rgba(0,0,0,0.28); margin-bottom: 10px; width: 100%; max-width: 400px; box-sizing: border-box;">
             <div style="font-weight: bold; color: #fff; font-size: 14px; margin-bottom: 5px;">🌐 ONLINE OYNA</div>
             <div style="display: flex; gap: 10px; width: 100%;">
-                <input type="text" id="username-input" placeholder="Kullanıcı Adı" maxlength="12" style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(100,200,255,0.4); color: white; padding: 6px; border-radius: 6px; outline: none; font-size: 12px; text-align: center;" />
+                <input type="text" id="username-input" placeholder="Kullanıcı Adı" maxlength="12"
+                    style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(100,200,255,0.4); color: white; padding: 6px; border-radius: 6px; outline: none; font-size: 12px; text-align: center;" />
             </div>
             <div style="display: flex; gap: 10px; width: 100%;">
-                <button type="button" id="btn-create-room" style="flex: 1; background: rgba(33, 178, 83, 0.6); border: 1px solid rgba(33, 178, 83, 0.8); color: white; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">Oda Kur</button>
+                <button type="button" id="btn-create-room"
+                    style="flex: 1; background: rgba(33, 178, 83, 0.6); border: 1px solid rgba(33, 178, 83, 0.8); color: white; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">Oda
+                    Kur</button>
             </div>
             <div style="display: flex; gap: 5px; width: 100%;">
-                <input type="text" id="room-id-input" placeholder="Oda Kodu" style="flex: 2; background: rgba(0,0,0,0.5); border: 1px solid rgba(100,200,255,0.4); color: white; padding: 6px; border-radius: 6px; outline: none; font-size: 12px; text-align: center;" />
-                <button type="button" id="btn-join-room" style="flex: 1; background: rgba(100, 200, 255, 0.2); border: 1px solid rgba(100, 200, 255, 0.4); color: white; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">Katıl</button>
+                <input type="text" id="room-id-input" placeholder="Oda Kodu"
+                    style="flex: 2; background: rgba(0,0,0,0.5); border: 1px solid rgba(100,200,255,0.4); color: white; padding: 6px; border-radius: 6px; outline: none; font-size: 12px; text-align: center;" />
+                <button type="button" id="btn-join-room"
+                    style="flex: 1; background: rgba(100, 200, 255, 0.2); border: 1px solid rgba(100, 200, 255, 0.4); color: white; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">Katıl</button>
             </div>
-            <div id="multiplayer-status" style="font-size: 11px; color: #aaa; margin-top: 5px; text-align: center; min-height: 14px;">Çevrimdışı</div>
+            <div id="multiplayer-status"
+                style="font-size: 11px; color: #aaa; margin-top: 5px; text-align: center; min-height: 14px;">Çevrimdışı
+            </div>
         </div>
         <div id="character-select" aria-label="Karakter secimi">
-            <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><img class="character-portrait" src="./character-previews/Fighter.png" alt=""><span class="character-name">FIGHTER</span><small>DENGELI</small></button>
-            <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Shinobi.png" alt=""><span class="character-name">SHINOBI</span><small>HIZLI</small></button>
-            <button class="character-button" data-character="Samurai" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Samurai.png" alt=""><span class="character-name">SAMURAI</span><small>GUCLU</small></button>
-            <button class="character-button" data-character="Gotoku" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Gotoku.png" alt=""><span class="character-name">GOTOKU</span><small>180 COIN</small></button>
-            <button class="character-button" data-character="Onre" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Onre.png" alt=""><span class="character-name">ONRE</span><small>220 COIN</small></button>
-            <button class="character-button" data-character="Yurei" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Yurei.png" alt=""><span class="character-name">YUREI</span><small>260 COIN</small></button>
-            <button class="character-button" data-character="Converted_Vampire" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Converted_Vampire.png" alt=""><span class="character-name">VAMPIR</span><small>300 COIN</small></button>
-            <button class="character-button" data-character="Countess_Vampire" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Countess_Vampire.png" alt=""><span class="character-name">KONTES</span><small>340 COIN</small></button>
-            <button class="character-button" data-character="Vampire_Girl" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Vampire_Girl.png" alt=""><span class="character-name">VAMP GIRL</span><small>380 COIN</small></button>
-            <button class="character-button" data-character="Satyr_1" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Satyr_1.png" alt=""><span class="character-name">SATYR I</span><small>420 COIN</small></button>
-            <button class="character-button" data-character="Satyr_2" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Satyr_2.png" alt=""><span class="character-name">SATYR II</span><small>460 COIN</small></button>
-            <button class="character-button" data-character="Satyr_3" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Satyr_3.png" alt=""><span class="character-name">SATYR III</span><small>500 COIN</small></button>
-            <button class="character-button" data-character="Fire_Wizard" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Fire_Wizard.png" alt=""><span class="character-name">FIRE WIZ</span><small>🔥 Alev</small></button>
-            <button class="character-button" data-character="Lightning_Mage" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Lightning_Mage.png" alt=""><span class="character-name">LGT MAGE</span><small>⚡ Şimşek</small></button>
-            <button class="character-button" data-character="Wanderer_Magician" type="button" aria-pressed="false"><img class="character-portrait" src="./character-previews/Wanderer_Magician.png" alt=""><span class="character-name">WANDERER</span><small>✨ Sihir</small></button>
+            <button class="character-button is-selected" data-character="Fighter" type="button" aria-pressed="true"><img
+                    class="character-portrait" src="./character-previews/Fighter.png" alt=""><span
+                    class="character-name">FIGHTER</span><small>DENGELI</small></button>
+            <button class="character-button" data-character="Shinobi" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Shinobi.png" alt=""><span
+                    class="character-name">SHINOBI</span><small>HIZLI</small></button>
+            <button class="character-button" data-character="Samurai" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Samurai.png" alt=""><span
+                    class="character-name">SAMURAI</span><small>GUCLU</small></button>
+            <button class="character-button" data-character="Gotoku" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Gotoku.png" alt=""><span
+                    class="character-name">GOTOKU</span><small>180 COIN</small></button>
+            <button class="character-button" data-character="Onre" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Onre.png" alt=""><span
+                    class="character-name">ONRE</span><small>220 COIN</small></button>
+            <button class="character-button" data-character="Yurei" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Yurei.png" alt=""><span
+                    class="character-name">YUREI</span><small>260 COIN</small></button>
+            <button class="character-button" data-character="Converted_Vampire" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Converted_Vampire.png" alt=""><span
+                    class="character-name">VAMPIR</span><small>300 COIN</small></button>
+            <button class="character-button" data-character="Countess_Vampire" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Countess_Vampire.png" alt=""><span
+                    class="character-name">KONTES</span><small>340 COIN</small></button>
+            <button class="character-button" data-character="Vampire_Girl" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Vampire_Girl.png" alt=""><span
+                    class="character-name">VAMP GIRL</span><small>380 COIN</small></button>
+            <button class="character-button" data-character="Satyr_1" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Satyr_1.png" alt=""><span
+                    class="character-name">SATYR I</span><small>420 COIN</small></button>
+            <button class="character-button" data-character="Satyr_2" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Satyr_2.png" alt=""><span
+                    class="character-name">SATYR II</span><small>460 COIN</small></button>
+            <button class="character-button" data-character="Satyr_3" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Satyr_3.png" alt=""><span
+                    class="character-name">SATYR III</span><small>500 COIN</small></button>
+            <button class="character-button" data-character="Fire_Wizard" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Fire_Wizard.png" alt=""><span
+                    class="character-name">FIRE WIZ</span><small>🔥 Alev</small></button>
+            <button class="character-button" data-character="Lightning_Mage" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Lightning_Mage.png" alt=""><span
+                    class="character-name">LGT MAGE</span><small>⚡ Şimşek</small></button>
+            <button class="character-button" data-character="Wanderer_Magician" type="button" aria-pressed="false"><img
+                    class="character-portrait" src="./character-previews/Wanderer_Magician.png" alt=""><span
+                    class="character-name">WANDERER</span><small>✨ Sihir</small></button>
         </div>
         <button id="start-button" type="button">OYUNA BASLA</button>
     </div>
@@ -1763,7 +1900,7 @@ height="600px"
 
     <div id=html></div>
 
-    <div id=crt  class=bottomright >
+    <div id=crt class=bottomright>
 
         <div id="system" hidden>
             <div class="button-container">
@@ -1777,7 +1914,7 @@ height="600px"
                 <div id=load_min>min</div>
                 <div id=load_avg>avg</div>
                 <div id=load_max>max</div>
-              <button id="load_rst" disabled>RESET</button>
+                <button id="load_rst" disabled>RESET</button>
             </div>
 
             <div id="level">(battery level unknown)</div>
@@ -1789,19 +1926,12 @@ height="600px"
 
             <div id="info" class="trinfo"></div>
 
-            <iframe id="iframe" class="framed" name="iframe"
-width="470px" height="90%"
-allowtransparency="true"
-style="z-index: 10; background: #FFFFFF;"
-frameborder="1"
-                allowfullscreen="true"
-                webkitallowfullscreen="true"
-                msallowfullscreen="true"
-                mozallowfullscreen="true"
+            <iframe id="iframe" class="framed" name="iframe" width="470px" height="90%" allowtransparency="true"
+                style="z-index: 10; background: #FFFFFF;" frameborder="1" allowfullscreen="true"
+                webkitallowfullscreen="true" msallowfullscreen="true" mozallowfullscreen="true"
                 sandbox="allow-same-origin allow-top-navigation allow-scripts allow-pointer-lock"
                 allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated"
-                src="about:blank"
-                scrolling="yes">
+                src="about:blank" scrolling="yes">
             </iframe>
         </div>
 
@@ -1819,67 +1949,68 @@ frameborder="1"
 
     <script type="application/javascript">
 
-    globalThis.__canvas_resized = (self, ecw, ech) => {
-        console.warn("TODO: panda3d canvas monitor", self, ecw, ech)
-    }
+        globalThis.__canvas_resized = (self, ecw, ech) => {
+            console.warn("TODO: panda3d canvas monitor", self, ecw, ech)
+        }
 
-    async function custom_onload(debug_hidden) {
-        // this is called before anything python is loaded
-        // make your js customization here
-        console.log(__FILE__, "custom_onload")
+        async function custom_onload(debug_hidden) {
+            // this is called before anything python is loaded
+            // make your js customization here
+            console.log(__FILE__, "custom_onload")
 
-        pyconsole.hidden = debug_hidden
-        system.hidden = debug_hidden
-        transfer.hidden = debug_hidden
-        info.hidden = debug_hidden
-        box.hidden =  debug_hidden
+            pyconsole.hidden = debug_hidden
+            system.hidden = debug_hidden
+            transfer.hidden = debug_hidden
+            info.hidden = debug_hidden
+            box.hidden = debug_hidden
 
-        fit_game_canvas()
-        show_infobox()
-    }
+            fit_game_canvas()
+            show_infobox()
+        }
 
-    function custom_prerun(){
-        // no python main and no (MEMFS + VFS) yet.
-        console.log(__FILE__, "custom_prerun")
+        function custom_prerun() {
+            // no python main and no (MEMFS + VFS) yet.
+            console.log(__FILE__, "custom_prerun")
 
-    }
+        }
 
-    function custom_postrun(){
-        // python main and no VFS filesystem yet.
-        console.log(__FILE__, "custom_postrun")
+        function custom_postrun() {
+            // python main and no VFS filesystem yet.
+            console.log(__FILE__, "custom_postrun")
 
-    }
+        }
 
-    function debug() {
-        // allow to gain access to dev tools from js console
-        // but only on desktop. difficult to reach when in iframe
-        python.config.debug = true
-        custom_onload(false)
-        Module.PyRun_SimpleString("shell.uptime()")
-        window_resize()
-    }
+        function debug() {
+            // allow to gain access to dev tools from js console
+            // but only on desktop. difficult to reach when in iframe
+            python.config.debug = true
+            custom_onload(false)
+            Module.PyRun_SimpleString("shell.uptime()")
+            window_resize()
+        }
 
-    function info_inline(data){
-        document.getElementById("info").innerHTML = data
-    }
+        function info_inline(data) {
+            document.getElementById("info").innerHTML = data
+        }
 
-    function info_online(url) {
-        // display info about current APK
-        fetch( url /*, options */)
-            .then((response) => response.text())
-            .then((html) => {
-                info_inline(html);
-        })
-        .catch((error) => {
-            console.warn(error);
-        });
-    }
+        function info_online(url) {
+            // display info about current APK
+            fetch(url /*, options */)
+                .then((response) => response.text())
+                .then((html) => {
+                    info_inline(html);
+                })
+                .catch((error) => {
+                    console.warn(error);
+                });
+        }
 
-    function frame_online(url) {
-        window.frames["iframe"].location = url;
-    }
+        function frame_online(url) {
+            window.frames["iframe"].location = url;
+        }
 
     </script>
 
 </body>
+
 </html>
