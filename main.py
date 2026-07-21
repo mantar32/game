@@ -645,7 +645,8 @@ class SpriteManager:
             return [surf]
         try:
             sheet = pygame.image.load(full_path).convert_alpha()
-        except:
+        except Exception as e:
+            print(f"[SpriteManager] Sprite yuklenemedi: {full_path} ({e})")
             return [pygame.Surface((128, 128))]
         frame_h = sheet.get_height()
         frame_w = frame_h
@@ -687,7 +688,8 @@ class SoundManager:
         try:
             if not pygame.mixer.get_init():
                 pygame.mixer.init()
-        except:
+        except Exception as e:
+            print(f"[SoundManager] Mixer baslatilamadi: {e}")
             self.enabled = False
 
     def load(self, name, filename):
@@ -696,15 +698,15 @@ class SoundManager:
         if os.path.exists(path):
             try:
                 self.sounds[name] = pygame.mixer.Sound(path)
-            except:
-                pass
-                
+            except Exception as e:
+                print(f"[SoundManager] Ses yuklenemedi: {path} ({e})")
+
     def play(self, name):
         if self.enabled and name in self.sounds:
             try:
                 self.sounds[name].play()
-            except:
-                pass
+            except Exception as e:
+                print(f"[SoundManager] Ses calinamadi: {name} ({e})")
 
 assets_path = os.path.join(BASE_DIR, "assets")
 assets = SpriteManager(assets_path)
@@ -1037,6 +1039,7 @@ class AIController:
         if self.difficulty == "Antrenman": return keys
         
         if ai_f.is_ko or p_f.is_ko: return keys
+        if getattr(ai_f, 'stun_timer', 0) > 0: return keys  # Sersemletilmis, hareket edemiyor
         self.cooldown -= 1
         dist = abs(ai_f.pos[0] - p_f.pos[0])
         ai_f.facing = 1 if p_f.pos[0] > ai_f.pos[0] else -1
@@ -1102,7 +1105,8 @@ class GameManager:
                 if diff: difficulty = str(diff)
                 mode = getattr(web_platform.window, "dovus_game_mode", None)
                 if mode: self.game_mode = str(mode)
-            except: pass
+            except Exception:
+                pass
             
         if self.game_mode == "Antrenman": difficulty = "Antrenman"
             
@@ -1175,10 +1179,23 @@ class GameManager:
         if net_mode == "CLIENT":
             incoming = web_get_incoming_state()
             if incoming:
-                self.p1.pos[0] = incoming["p1x"]
-                self.p1.pos[1] = incoming["p1y"]
-                self.p2.pos[0] = incoming["p2x"]
-                self.p2.pos[1] = incoming["p2y"]
+                # Pozisyonlari dogrudan atamak yerine yumusatiyoruz (lerp), boylece
+                # ag gecikmesi/dusuk paket hizinda karakterler "teleport" gibi degil
+                # akici hareket ediyormus gibi gorunur. Buyuk sicramalarda (ornegin
+                # round basinda pozisyon sifirlanirken) lerp yerine dogrudan atama
+                # yapariz ki karakter yanlislikla ekranda surunmesin.
+                LERP_FACTOR = 0.35
+                SNAP_DISTANCE = 150  # bu mesafeden buyuk farklarda dogrudan atla
+                for fighter, key_x, key_y in ((self.p1, "p1x", "p1y"), (self.p2, "p2x", "p2y")):
+                    target_x, target_y = incoming[key_x], incoming[key_y]
+                    if abs(fighter.pos[0] - target_x) > SNAP_DISTANCE:
+                        fighter.pos[0] = target_x
+                    else:
+                        fighter.pos[0] += (target_x - fighter.pos[0]) * LERP_FACTOR
+                    if abs(fighter.pos[1] - target_y) > SNAP_DISTANCE:
+                        fighter.pos[1] = target_y
+                    else:
+                        fighter.pos[1] += (target_y - fighter.pos[1]) * LERP_FACTOR
                 self.p1.health = incoming["p1h"]
                 self.p2.health = incoming["p2h"]
                 self.p1.special_meter = incoming["p1s"]
@@ -1385,8 +1402,10 @@ class GameManager:
                     self.state = "GAME_OVER"
                     if getattr(self, "game_mode", "") == "Arcade" and winner == self.p1 and getattr(self, "arcade_level", 1) == 6:
                         if web_platform:
-                            try: web_platform.window.eval("globalThis.dovus_arcade_won = true;")
-                            except: pass
+                            try:
+                                web_platform.window.eval("globalThis.dovus_arcade_won = true;")
+                            except Exception:
+                                pass
 
     def draw(self, surface):
         bg = getattr(self, 'arena_theme', {"bg": BG_TOP, "bot": BG_BOT, "ground": GROUND_COLOR})
