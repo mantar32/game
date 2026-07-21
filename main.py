@@ -137,8 +137,8 @@ CHARACTER_STATS = {
     },
     "Fire_Wizard": {
         "display": "Fire Wizard",
-        "role": "Atescı",
-        "tip": "Ates topu fırlatır",
+        "role": "Atesci",
+        "tip": "Ates topu firlatir",
         "punch": 7,
         "kick": 11,
         "special": 28,
@@ -147,7 +147,7 @@ CHARACTER_STATS = {
     "Lightning_Mage": {
         "display": "Lightning Mage",
         "role": "Seker",
-        "tip": "Şimşek yağdırır",
+        "tip": "Simsek yagdirir",
         "punch": 6,
         "kick": 10,
         "special": 30,
@@ -598,7 +598,7 @@ class CombinedKeys:
 
 
 class _DictKeys:
-    """Dict tabanlı key durumu okuyucu — AI input için kullanılır."""
+    """Dict tabanli key durumu okuyucu — AI input icin kullanilir."""
     def __init__(self, d):
         self.d = d
     def __getitem__(self, k):
@@ -657,7 +657,7 @@ class SpriteManager:
             frame = sheet.subsurface(pygame.Rect(i * frame_w, 0, frame_w, frame_h))
             frame = pygame.transform.scale(frame, (int(frame_w * target_scale), int(frame_h * target_scale)))
             if is_dead:
-                # Görünür piksel alanını hesapla ve frame'i crop et
+                # Gorunur piksel alanini hesapla ve frame'i crop et
                 bbox = frame.get_bounding_rect()
                 if bbox.width > 0 and bbox.height > 0:
                     cropped = pygame.Surface((bbox.width, bbox.height), pygame.SRCALPHA)
@@ -1128,7 +1128,7 @@ class GameManager:
             self.p2.name = web_get_remote_username()
         elif vs_ai:
             if self.game_mode == "Arcade":
-                self.p2.name = f"{self.p2.name} (Bölüm {self.arcade_level})"
+                self.p2.name = f"{self.p2.name} (Bolum {self.arcade_level})"
             elif self.game_mode == "Antrenman":
                 self.p2.name = f"{self.p2.name} (Antrenman)"
             else:
@@ -1477,7 +1477,7 @@ class GameManager:
         self.is_draw = False
 
 
-# --- Asenkron Ana Döngü (Pygbag Uyumlu) ---
+# --- Asenkron Ana Dongu (Pygbag Uyumlu) ---
 async def main():
     global screen
     game = GameManager()
@@ -1493,7 +1493,7 @@ async def main():
                 elif event.key == pygame.K_r and game.state in ("ROUND_END", "GAME_OVER"):
                     game.start_fight(True)
             
-            # Dokunmatik (Touch) girdilerini işleme (sadece oyun icerisinde)
+            # Dokunmatik (Touch) girdilerini isleme (sadece oyun icerisinde)
             if game.state == "FIGHT":
                 game.touch_ui.process_event(event)
 
@@ -1527,7 +1527,7 @@ async def main():
         current_fps = 20 if getattr(game, 'slow_mo_frames', 0) > 0 else FPS
         clock.tick(current_fps)
         
-        # Tarayıcı sekmesinin donmasını engellemek için asyncio uyku komutu (Zorunlu)
+        # Tarayici sekmesinin donmasini engellemek icin asyncio uyku komutu (Zorunlu)
         await asyncio.sleep(0)
 
     pygame.quit()
