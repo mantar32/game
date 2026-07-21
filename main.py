@@ -1157,6 +1157,9 @@ class GameManager:
         ])
 
     def update(self):
+        if getattr(self, "flash_alpha", 0) > 0: 
+            self.flash_alpha = max(0, self.flash_alpha - 5)
+            
         if self.state == "MENU":
             return
         if self.state == "GAME_OVER":
@@ -1249,7 +1252,6 @@ class GameManager:
                 self.p2.is_ko = False
                 self.p2.change_state(IdleState())
         
-        if self.flash_alpha > 0: self.flash_alpha = max(0, self.flash_alpha - 5)
         if self.slow_mo_frames > 0: self.slow_mo_frames -= 1
         
         if pygame.time.get_ticks() - self.last_tick >= 1000 and self.state == "FIGHT":
