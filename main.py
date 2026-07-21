@@ -1076,6 +1076,8 @@ class GameManager:
         self.touch_ui = MobileTouchController()
         self.slow_mo_frames = 0
         self.flash_alpha = 0
+        self.hit_stop_frames = 0     # Vurus anindaki kisa "frame freeze" suresi
+        self.vs_screen_timer = 0     # VS ekraninin kalan suresi (kare sayisi)
         
         self.ctrl_p1 = {'up': pygame.K_w, 'left': pygame.K_a, 'right': pygame.K_d, 'punch': pygame.K_j, 'kick': pygame.K_k, 'special': pygame.K_l, 'block': pygame.K_u}
         self.ctrl_p2 = {'up': pygame.K_UP, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'punch': pygame.K_KP1, 'kick': pygame.K_KP2, 'special': pygame.K_KP3, 'block': pygame.K_KP0}
@@ -1137,7 +1139,7 @@ class GameManager:
                 self.p2.name = f"{self.p2.name} (Antrenman)"
             else:
                 self.p2.name = f"{self.p2.name} AI ({difficulty})"
-        self.reset_round(); self.state = "FIGHT"
+        self.reset_round(); self.state = "VS_SCREEN"; self.vs_screen_timer = 90  # ~1.5 saniye (60 FPS)
 
     def reset_round(self):
         self.touch_ui.clear()
@@ -1172,7 +1174,19 @@ class GameManager:
         if self.state == "ROUND_END":
             self.update_finish_animations()
             return
-        
+        if self.state == "VS_SCREEN":
+            self.vs_screen_timer -= 1
+            if self.vs_screen_timer <= 0:
+                self.state = "FIGHT"
+                self.last_tick = pygame.time.get_ticks()
+            return
+
+        # Hit-stop: vurus anindaki kisa "frame freeze". Karakterlerin fizigi/state'i
+        # bu kareler boyunca guncellenmez, boylece vurusun agirligi hissedilir.
+        if self.hit_stop_frames > 0:
+            self.hit_stop_frames -= 1
+            return
+
         net_mode = getattr(self, "network_mode", "OFFLINE")
         
         # --- CLIENT MODE: Fiziksiz, sadece Host'tan gelen veriyi goster ---
@@ -1324,6 +1338,7 @@ class GameManager:
                     self.particles.emit_block(defender.pos[0], defender.pos[1]-60)
                     self.particles.emit_text(defender.pos[0], defender.pos[1]-145, "BLOK", (120, 210, 255))
                     attacker.combo_count = 0 
+                    self.hit_stop_frames = max(self.hit_stop_frames, 3)
                     
                     if defender.reflect_damage > 0:
                         reflect = base_damage * defender.reflect_damage
@@ -1368,6 +1383,11 @@ class GameManager:
                     defender.change_state(HitStunState())
                     self.particles.emit_hit(defender.pos[0], defender.pos[1]-60); self.camera.shake(intensity=8 + attacker.combo_count*2)
                     self.particles.emit_text(defender.pos[0], defender.pos[1]-145, f"-{int(damage)}", (255, 230, 80))
+                    # Vurus anini "agirlastirmak" icin kisa bir frame-freeze (hit-stop).
+                    # Kritik vurus veya yuksek combo'da freeze suresi biraz uzuyor.
+                    stop_frames = 5 if random.random() < attacker.crit_chance else 4
+                    stop_frames += min(3, attacker.combo_count - 1)
+                    self.hit_stop_frames = max(self.hit_stop_frames, stop_frames)
                     
                     if attacker.combo_count >= 3:
                         self.particles.emit_text(attacker.pos[0], attacker.pos[1]-160, f"{attacker.combo_count} COMBO!", (255, 100, 50))
@@ -1407,6 +1427,70 @@ class GameManager:
                             except Exception:
                                 pass
 
+    def draw_vs_screen(self, surface):
+        """P1 vs P2 tanitim ekrani: karakterler kenarlardan kayarak girer,
+        ortada 'VS' yazisi belirir, son anlarda 'FIGHT!' flas efekti olur."""
+        total = 90.0
+        elapsed = total - self.vs_screen_timer
+        progress = max(0.0, min(1.0, elapsed / 25.0))  # ilk ~0.4sn: giris animasyonu
+        ease = 1 - (1 - progress) ** 3  # ease-out cubic
+
+        # Koyu, degrade bir zemin (arena tonlarindan bagimsiz, sahne hissi icin)
+        for i in range(HEIGHT):
+            t = i / HEIGHT
+            color = [int(6 + (18 - 6) * t), int(8 + (14 - 8) * t), int(16 + (30 - 16) * t)]
+            pygame.draw.line(surface, color, (0, i), (WIDTH, i))
+
+        # Merkez cizgisi (bolucu)
+        pygame.draw.line(surface, (255, 215, 0), (WIDTH // 2, 60), (WIDTH // 2, HEIGHT - 60), 2)
+
+        # P1 portresi: soldan kayarak girer
+        p1_frames = self.p1.frames
+        if p1_frames:
+            img = p1_frames[0]
+            start_x = -220
+            target_x = WIDTH // 2 - 260
+            x = int(start_x + (target_x - start_x) * ease)
+            rect = img.get_rect(midbottom=(x, HEIGHT // 2 + 90))
+            surface.blit(img, rect)
+
+        # P2 portresi: sagdan kayarak girer (yatay flip)
+        p2_frames = self.p2.frames
+        if p2_frames:
+            img = pygame.transform.flip(p2_frames[0], True, False)
+            start_x = WIDTH + 220
+            target_x = WIDTH // 2 + 260
+            x = int(start_x + (target_x - start_x) * ease)
+            rect = img.get_rect(midbottom=(x, HEIGHT // 2 + 90))
+            surface.blit(img, rect)
+
+        # Isimler
+        if progress >= 1.0:
+            p1_name = font_med.render(self.p1.name.upper(), True, P1_COLOR)
+            surface.blit(p1_name, (WIDTH // 2 - 260 - p1_name.get_width() // 2, HEIGHT // 2 + 110))
+            p2_name = font_med.render(self.p2.name.upper(), True, P2_COLOR)
+            surface.blit(p2_name, (WIDTH // 2 + 260 - p2_name.get_width() // 2, HEIGHT // 2 + 110))
+
+        # Ortadaki "VS" yazisi, giris animasyonu bittikten sonra hafif buyuyerek belirir
+        if progress >= 1.0:
+            vs_progress = min(1.0, (elapsed - 25) / 12.0) if elapsed > 25 else 0.0
+            vs_scale = 0.6 + 0.4 * vs_progress
+            vs_surf = font_large.render("VS", True, HIGHLIGHT)
+            if vs_scale < 1.0:
+                w, h = vs_surf.get_size()
+                vs_surf = pygame.transform.smoothscale(vs_surf, (max(1, int(w * vs_scale)), max(1, int(h * vs_scale))))
+            vs_rect = vs_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+            surface.blit(vs_surf, vs_rect)
+
+        # Son anlarda "FIGHT!" flasi
+        if self.vs_screen_timer <= 20:
+            fight_progress = 1 - (self.vs_screen_timer / 20.0)
+            alpha = int(255 * min(1.0, fight_progress * 2))
+            fight_surf = font_large.render("FIGHT!", True, (255, 60, 60))
+            fight_surf.set_alpha(alpha)
+            fight_rect = fight_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 170))
+            surface.blit(fight_surf, fight_rect)
+
     def draw(self, surface):
         bg = getattr(self, 'arena_theme', {"bg": BG_TOP, "bot": BG_BOT, "ground": GROUND_COLOR})
         for i in range(HEIGHT):
@@ -1423,6 +1507,10 @@ class GameManager:
                 color = [8 + (65 - 8) * t, 16 + (90 - 16) * t, 28 + (119 - 28) * t]
                 pygame.draw.line(surface, color, (0, i), (WIDTH, i))
             pygame.draw.line(surface, HIGHLIGHT, (WIDTH // 2 - 220, 148), (WIDTH // 2 + 220, 148), 3)
+            return
+
+        if self.state == "VS_SCREEN":
+            self.draw_vs_screen(surface)
             return
 
         self.p1.draw(surface, self.camera.offset, self.particles)
