@@ -1404,15 +1404,6 @@ class GameManager:
                 color = [8 + (65 - 8) * t, 16 + (90 - 16) * t, 28 + (119 - 28) * t]
                 pygame.draw.line(surface, color, (0, i), (WIDTH, i))
             pygame.draw.line(surface, HIGHLIGHT, (WIDTH // 2 - 220, 148), (WIDTH // 2 + 220, 148), 3)
-            title_shadow = font_large.render("STREET FIGHTER PY", True, (0, 0, 0))
-            title = font_large.render("STREET FIGHTER PY", True, HIGHLIGHT)
-            title_x = WIDTH // 2 - title.get_width() // 2
-            surface.blit(title_shadow, (title_x + 4, 46))
-            surface.blit(title, (title_x, 42))
-            sub = font_small.render("ARENA SENI BEKLIYOR!", True, TEXT_COLOR)
-            surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 122))
-            hint = font_touch.render("Karakterini sec, arenaya gir, coin kazan.", True, (210, 220, 230))
-            surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, 168))
             return
 
         self.p1.draw(surface, self.camera.offset, self.particles)
