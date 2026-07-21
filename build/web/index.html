@@ -476,6 +476,9 @@ function selectCharacter(character) {
             renderEconomyUI(`${catalog.label} icin ${catalog.price} coin lazim.`);
             return;
         }
+        const confirmBuy = window.confirm(`${catalog.label} karakterini ${catalog.price} coin karsiliginda satin almak istiyor musun?`);
+        if (!confirmBuy) return;
+        
         globalThis.dovus_coins -= catalog.price;
         globalThis.dovus_unlocked.push(character);
         saveEconomy();
