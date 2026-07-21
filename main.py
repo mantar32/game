@@ -768,6 +768,38 @@ class ParticleSystem:
                 label.set_alpha(alpha)
                 surface.blit(label, (floater[0] + cam[0] - label.get_width() // 2, floater[1] + cam[1]))
 
+class Projectile:
+    def __init__(self, x, y, vel_x, owner, damage):
+        self.x = x
+        self.y = y
+        self.vel_x = vel_x
+        self.owner = owner
+        self.damage = damage
+        self.rect = pygame.Rect(x - 20, y - 20, 40, 40)
+        self.active = True
+        self.hit_connected = False
+        
+        if owner.character_id == "Fire_Wizard": self.color = (255, 80, 0)
+        elif owner.character_id == "Lightning_Mage": self.color = (100, 200, 255)
+        elif owner.character_id == "Wanderer_Magician": self.color = (180, 100, 255)
+        else: self.color = (255, 255, 255)
+        
+        self.trail_timer = 0
+        
+    def update(self):
+        self.x += self.vel_x
+        self.rect.centerx = int(self.x)
+        self.trail_timer += 1
+        if self.x < -400 or self.x > WIDTH + 400:
+            self.active = False
+            
+    def draw(self, surface, cam, particles):
+        cx, cy = int(self.x + cam[0]), int(self.y + cam[1])
+        pygame.draw.circle(surface, self.color, (cx, cy), 18)
+        pygame.draw.circle(surface, (255, 255, 255), (cx, cy), 8)
+        if self.trail_timer % 2 == 0 and particles:
+            particles.emit(self.x, self.y, self.color, 1)
+
 # --- State Machine ---
 class State:
     def enter(self, fighter): pass
@@ -840,7 +872,33 @@ class KickState(AttackState):
     def __init__(self): super().__init__("Kick", 30, 9, 21, KICK_DAMAGE, 86, 34, 24, 62, move_speed=2.4)
 class SpecialState(AttackState):
     def __init__(self): super().__init__("Special", 40, 15, 30, SPECIAL_DAMAGE, 100, 100, 10, 120, move_speed=0.8)
-    def enter(self, fighter): super().enter(fighter); fighter.special_meter = 0
+    def enter(self, fighter): 
+        super().enter(fighter); fighter.special_meter = 0
+        fighter.projectile_fired = False
+
+    def update(self, fighter, keys):
+        fighter.anim_timer += 1
+        if not getattr(fighter, 'is_ranged', False):
+            fighter.vel[0] = fighter.facing * self.move_speed
+            if self.active_start <= fighter.anim_timer <= self.active_end:
+                hx = fighter.pos[0] + (self.h_dx if fighter.facing == 1 else -self.h_dx - self.h_w)
+                hy = fighter.pos[1] - self.h_dy
+                fighter.hitbox = pygame.Rect(hx, hy, self.h_w, self.h_h)
+                fighter.current_damage = fighter.damage_for(self.anim_name, self.damage)
+            else: fighter.hitbox = None
+        else:
+            fighter.vel[0] = 0
+            fighter.hitbox = None
+            fighter.current_damage = fighter.damage_for(self.anim_name, self.damage)
+            if fighter.anim_timer == self.active_start and not fighter.projectile_fired:
+                fighter.projectile_fired = True
+                px = fighter.pos[0] + (60 * fighter.facing)
+                py = fighter.pos[1] - 80
+                p_vel = 14 * fighter.facing
+                fighter.active_projectiles.append(Projectile(px, py, p_vel, fighter, fighter.current_damage))
+                sounds.play("punch") # or special sound
+                
+        if fighter.anim_timer >= self.duration: fighter.change_state(IdleState())
 
 class BlockState(State):
     def enter(self, fighter): fighter.set_anim("Block")
@@ -884,6 +942,8 @@ class Fighter:
         self.hit_connected = False; self.current_damage = 0
         self.is_ko = False; self.rounds_won = 0
         self.current_anim = "Idle"
+        self.is_ranged = character_id in ["Fire_Wizard", "Lightning_Mage", "Wanderer_Magician"]
+        self.active_projectiles = []
         
         # Passive abilities
         self.lifesteal = 0.05 if "Vampire" in self.character_id else 0.0
@@ -941,6 +1001,10 @@ class Fighter:
             self.combo_timer -= 1
             if self.combo_timer <= 0: self.combo_count = 0
         
+        for p in self.active_projectiles:
+            p.update()
+        self.active_projectiles = [p for p in self.active_projectiles if p.active]
+        
         # Yanma hasari (Fire Wizard ozel etkisi)
         if self.burn_timer > 0:
             self.burn_timer -= 1
@@ -951,7 +1015,7 @@ class Fighter:
         if self.stun_timer > 0:
             self.stun_timer -= 1
 
-    def draw(self, surface, cam):
+    def draw(self, surface, cam, particles=None):
         cx, cy = int(self.pos[0] + cam[0]), int(self.pos[1] + cam[1])
         pygame.draw.ellipse(surface, (20,20,20), (cx-26, GROUND_Y+cam[1]-9, 52, 18))
         if len(self.frames) > 0:
@@ -959,6 +1023,8 @@ class Fighter:
             if self.facing == -1: img = pygame.transform.flip(img, True, False)
             img_rect = img.get_rect(midbottom=(cx, cy + 12))
             surface.blit(img, img_rect)
+        for p in self.active_projectiles:
+            p.draw(surface, cam, particles)
 
 # --- AI Controller ---
 class AIController:
@@ -1196,18 +1262,45 @@ class GameManager:
         for attacker, defender in [(self.p1, self.p2), (self.p2, self.p1)]:
             if defender.is_ko or defender.health <= 0:
                 continue
+                
+            hit_detected = False
+            is_projectile = False
+            active_proj = None
+            
             if attacker.hitbox and attacker.hitbox.colliderect(defender.hurtbox) and not attacker.hit_connected:
+                hit_detected = True
+            else:
+                for p in attacker.active_projectiles:
+                    if p.active and not p.hit_connected and p.rect.colliderect(defender.hurtbox):
+                        hit_detected = True
+                        is_projectile = True
+                        active_proj = p
+                        break
+                        
+            if hit_detected:
                 # Dodge check
                 if random.random() < defender.dodge_chance and not isinstance(defender.state, BlockState):
                     self.particles.emit_text(defender.pos[0], defender.pos[1]-145, "DODGE!", (150, 255, 150))
-                    attacker.hit_connected = True
+                    if is_projectile:
+                        active_proj.hit_connected = True
+                        active_proj.active = False
+                    else:
+                        attacker.hit_connected = True
                     continue
                     
-                attacker.hit_connected = True
+                if is_projectile:
+                    active_proj.hit_connected = True
+                    active_proj.active = False
+                    self.particles.emit(active_proj.x, active_proj.y, active_proj.color, 15)
+                    base_damage = active_proj.damage
+                else:
+                    attacker.hit_connected = True
+                    base_damage = attacker.current_damage
+                    
                 attacker.special_meter = min(100, attacker.special_meter + 10)
                 
                 if isinstance(defender.state, BlockState) and defender.facing != attacker.facing:
-                    damage = attacker.current_damage * BLOCK_REDUCTION
+                    damage = base_damage * BLOCK_REDUCTION
                     defender.take_damage(damage)
                     sounds.play("block")
                     self.particles.emit_block(defender.pos[0], defender.pos[1]-60)
@@ -1223,7 +1316,7 @@ class GameManager:
                     attacker.combo_timer = 90
                     combo_bonus = 1.0 + (attacker.combo_count - 1) * 0.15
                     
-                    damage = attacker.current_damage * combo_bonus
+                    damage = base_damage * combo_bonus
                     
                     if random.random() < attacker.crit_chance:
                         damage *= 2.0
@@ -1235,13 +1328,13 @@ class GameManager:
                         heal = damage * attacker.lifesteal
                         attacker.health = min(MAX_HEALTH, attacker.health + heal)
                         self.particles.emit_text(attacker.pos[0], attacker.pos[1]-145, f"+{int(heal)} HP", (50, 255, 50))
-                    elif attacker.character_id == "Yurei" and isinstance(attacker.state, SpecialState):
+                    elif attacker.character_id == "Yurei" and (isinstance(attacker.state, SpecialState) or is_projectile):
                         heal = damage * 0.3
                         attacker.health = min(MAX_HEALTH, attacker.health + heal)
                         self.particles.emit_text(attacker.pos[0], attacker.pos[1]-145, f"+{int(heal)} HP", (50, 255, 50))
                     
                     # Wizard ozel etkiler (sadece Special saldirida)
-                    if isinstance(attacker.state, SpecialState):
+                    if isinstance(attacker.state, SpecialState) or is_projectile:
                         if attacker.burn_on_special:
                             defender.burn_timer = 120  # 2 saniye yanma
                             self.particles.emit_text(defender.pos[0], defender.pos[1]-160, "YANMA!", (255, 80, 0))
@@ -1321,7 +1414,8 @@ class GameManager:
             surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, 168))
             return
 
-        self.p1.draw(surface, self.camera.offset); self.p2.draw(surface, self.camera.offset)
+        self.p1.draw(surface, self.camera.offset, self.particles)
+        self.p2.draw(surface, self.camera.offset, self.particles)
         self.particles.update_and_draw(surface, self.camera.offset)
 
         pygame.draw.rect(surface, (255,0,0), (50, 30, 400, 30))
