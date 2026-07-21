@@ -1300,15 +1300,14 @@ class GameManager:
                 attacker.special_meter = min(100, attacker.special_meter + 10)
                 
                 if isinstance(defender.state, BlockState) and defender.facing != attacker.facing:
-                    damage = base_damage * BLOCK_REDUCTION
-                    defender.take_damage(damage)
+                    # BLOK basarili: SIFIR HASAR (Can azalmaz)
                     sounds.play("block")
                     self.particles.emit_block(defender.pos[0], defender.pos[1]-60)
                     self.particles.emit_text(defender.pos[0], defender.pos[1]-145, "BLOK", (120, 210, 255))
                     attacker.combo_count = 0 
                     
                     if defender.reflect_damage > 0:
-                        reflect = damage * defender.reflect_damage
+                        reflect = base_damage * defender.reflect_damage
                         attacker.take_damage(reflect)
                         self.particles.emit_text(attacker.pos[0], attacker.pos[1]-145, f"REFLECT {int(reflect)}", (255, 100, 255))
                 else:
